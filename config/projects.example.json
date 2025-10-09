@@ -1,0 +1,34 @@
+{
+  "example_project": {
+    "id": "example_project",
+    "name": "Example Spanner Project",
+    "database_type": "spanner",
+    "database_config": {
+      "type": "spanner",
+      "project_id": "your-gcp-project-id",
+      "instance_id": "your-spanner-instance",
+      "database_id": "your-spanner-database",
+      "graph_name": "",
+      "auth_type": "oauth2",
+      "oauth_config": {
+        "client_id": "your-oauth-client-id.apps.googleusercontent.com",
+        "client_secret": "your-oauth-client-secret",
+        "redirect_uri": "http://localhost:9080/google/spanner/callback",
+        "scopes": [
+                "https://www.googleapis.com/auth/cloudplatformprojects.readonly",
+                "https://www.googleapis.com/auth/spanner.admin",
+                "https://www.googleapis.com/auth/spanner.data",
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/userinfo.email"
+            ]
+      },
+      "options": {
+        "max_sessions": 100,
+        "timeout": 30,
+        "read_only": true
+      }
+    },
+    "create_time": "2025-10-08T10:00:00Z",
+    "update_time": "2025-10-08T10:00:00Z"
+  }
+}

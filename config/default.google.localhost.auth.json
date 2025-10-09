@@ -1,0 +1,16 @@
+{
+    "web": {
+        "client_id": "184920862603-gsaf7oemn9e3li76cam6vhve9pqq4phn.apps.googleusercontent.com",
+        "project_id": "kineviz-spanner",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_secret": "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",
+        "redirect_uris": [
+            "http://localhost:9080/google/spanner/callback"
+        ],
+        "javascript_origins": [
+            "http://localhost:9080"
+        ]
+    }
+}
