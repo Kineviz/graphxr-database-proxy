@@ -24,7 +24,7 @@ A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to 
     git clone https://github.com/Kineviz/graphxr-database-proxy.git
     cd graphxr-database-proxy
     uv venv
-    source .venv/bin/activate
+    source .venv/bin/activate # or .venv/bin/activate on Windows
     uv pip install -e ".[ui]"
     uv pip install -r requirements.txt
     cd frontend && npm install && npm run build && cd -
