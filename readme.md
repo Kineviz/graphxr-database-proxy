@@ -6,18 +6,45 @@
 
 > **Language**: [English](README.md) | [中文](README.zh.md)
 
-A secure middleware that connects [GraphXR Frontend](https://www.kineviz.com/graphxr) to various backend databases with zero trust architecture.
+A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to various backend databases with zero trust architecture.
 
-##  Features
+## Features
 
 - **Zero Trust Security**: Strict authentication and authorization at the proxy layer
 - **Direct Browser Connectivity**: REST/GraphQL APIs for efficient data access
-- **Multi-Database Support**: Spanner, Neo4j, PostgreSQL, MongoDB, and more
+- **Multi-Database Support**: Spanner Graph, Neo4j, and more
 - **Open Source**: Fully auditable and customizable
 - **Pure Python**: Easy to deploy and maintain
 
+## ⚡ Quick Start for Spanner Graph
 
-## 🛠️ Quick Start
+1. Run the following commands to start graphxr-database-proxy
+
+    ```
+    git clone https://github.com/Kineviz/graphxr-database-proxy.git
+    cd graphxr-database-proxy
+    uv venv
+    source .venv/bin/activate
+    uv pip install -e '.[ui]'
+    uv pip install -r requirements.txt
+    cd frontend && npm install && npm run build && cd -
+    graphxr-proxy --ui 
+    ```
+
+2. Visit http://0.0.0.0:9080/
+3. Click "Create New Project"
+4. Project Name: "Test"
+5. Database Type: "Google Cloud Spanner"
+6. Authentication Type: "Service Account"
+7. Upload the credential file you exported from GCP Console or gcloud CLI.
+8. Select "Instance ID" e.g. "demo"
+9. Select "Database ID" e.g. "cymbal"
+10. Select "Property Graph" e.g. "ECommerceGraph"
+11. Click "Create"
+12. For the new project, copy the API URL. e.g. "http://localhost:9080/api/spanner/Test"
+13. Paste the API URL into GraphXR for a project with a "Database Proxy" database type.
+
+## Other ways to start graphxr-database-proxy
 
 ### Install
 
