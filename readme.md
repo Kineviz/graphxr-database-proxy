@@ -42,7 +42,7 @@ A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to 
 10. Select "Property Graph" e.g. "ECommerceGraph"
 11. Click "Create"
 12. For the new project, under Actions, copy the API URL. e.g. "http://localhost:9080/api/spanner/Test"
-13. Paste the API URL into GraphXR for a project with a "Database Proxy" database type.
+13. Go back to GraphXR's Create Project wizard and paste the API URL into GraphXR for a project with a "Database Proxy" database type.
 
 ## Other ways to start graphxr-database-proxy
 
