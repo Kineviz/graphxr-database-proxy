@@ -7,17 +7,42 @@ module.exports = (env, argv) => {
 
   return {
     entry: "./src/index.tsx",
+    mode: isProduction ? "production" : "development",
+    cache: {
+      type: "filesystem",
+      cacheDirectory: path.resolve(__dirname, ".webpack-cache"),
+    },
     output: {
       path: path.resolve(__dirname, "dist"),
-      filename: "[name].js",
+      filename: isProduction ? "[name].[contenthash].js" : "[name].js",
       publicPath: "/static/",
-      clean: true,
+      clean: isProduction, // Only clean in production mode
+      // Add unique hash for dev builds to distinguish from prod builds
+      ...(isProduction ? {} : { 
+        pathinfo: true,
+        devtoolModuleFilenameTemplate: 'webpack://[namespace]/[resource-path]?[loaders]'
+      }),
     },
     resolve: {
       extensions: [".tsx", ".ts", ".js", ".jsx"],
       alias: {
         "@": path.resolve(__dirname, "src"),
       },
+    },
+    watchOptions: {
+      // Add watch options to prevent excessive rebuilding
+      aggregateTimeout: 300,
+      poll: 1000,
+      ignored: [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/.git/**",
+        "**/.vscode/**",
+        "**/.env*",
+        "**/*.log",
+        "**/*.tmp",
+        "**/public/**/*.html",
+      ],
     },
     module: {
       rules: [
@@ -106,17 +131,26 @@ module.exports = (env, argv) => {
     ],
     devServer: {
       devMiddleware: {
-        writeToDisk: true, // Enable writing to disk
+        writeToDisk: true, // Always write files to disk
       },
       static: {
         directory: path.join(__dirname, "dist"),
         publicPath: "/",
         serveIndex: false,
-        watch: true,
+        watch: false, // Keep watching disabled to prevent reload loops
       },
       port: 3002,
       open: true,
       hot: true,
+      liveReload: false, // Keep live reload disabled
+      client: {
+        overlay: {
+          errors: true,
+          warnings: false,
+        },
+        progress: true,
+        reconnect: 3,
+      },
       historyApiFallback: {
         disableDotRule: true,
         htmlAcceptHeaders: ["text/html", "application/xhtml+xml"],

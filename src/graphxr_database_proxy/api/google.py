@@ -85,24 +85,29 @@ async def list_google_projects(request: Request):
         default_oauth = get_default_oauth_config()
         newAuth = { **default_oauth, **auth }
 
+        credentials, project_id = get_google_credentials(newAuth)
 
-        credentials, _ = get_google_credentials(newAuth)
-
+        is_service_account = credentials and isinstance(credentials, service_account.Credentials)
         # Use Resource Manager API to list projects
         projects = []
-    
-        client = resourcemanager_v3.ProjectsClient(credentials=credentials)
-        
-        search_request = resourcemanager_v3.SearchProjectsRequest()
-        page_result = client.search_projects(request=search_request)
-        
-        for project in page_result:
+
+        if is_service_account and project_id:
             projects.append(GoogleProject(
-                name=project.display_name or project.name,
-                id=project.project_id,
+                name=project_id,
+                id=project_id,
                 instances=[]
             ))
-
+        else:
+            client = resourcemanager_v3.ProjectsClient(credentials=credentials)
+            search_request = resourcemanager_v3.SearchProjectsRequest()
+            page_result = client.search_projects(request=search_request)
+            for project in page_result:
+                projects.append(GoogleProject(
+                    name=project.display_name or project.name,
+                    id=project.project_id,
+                    instances=[]
+                ))
+                
         # Only keep projects that contain Spanner instances
         spanner_projects = []
 

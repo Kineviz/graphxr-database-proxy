@@ -30,6 +30,12 @@ interface ProjectFormProps {
   onCancel: () => void;
 }
 
+
+//window is localhost:9080 use the oauth2 auth by default, otherwise use service account by default
+//@todo maybe we can support other auth types in the future
+const DefaultAuthType = window.location.origin === "http://localhost:9080" ? "oauth2" : "service_account";
+
+
 const ProjectForm: React.FC<ProjectFormProps> = ({
   initialValues,
   onSubmit,
@@ -38,9 +44,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   const [form] = Form.useForm();
   const [databaseType, setDatabaseType] =
     React.useState<DatabaseType>("spanner");
-  const [authType, setAuthType] = React.useState<AuthType>("oauth2");
+  const [authType, setAuthType] = React.useState<AuthType>(DefaultAuthType);
   const [serviceAccountKey, setServiceAccountKey] = React.useState<any>({});
-  const [showOauthAdvanced, setShowOauthAdvanced] = React.useState(false);
+  // const [showOauthAdvanced, setShowOauthAdvanced] = React.useState(false);
   const [loading, setLoading] = React.useState({
     listProjects: false,
     listDatabases: false,
@@ -61,7 +67,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       });
       setDatabaseType(initialValues.database_type);
       setAuthType(initialValues.database_config.auth_type);
-      setServiceAccountKey({
+      updateServiceAccountKey({
         ...initialValues.database_config.oauth_config,
       });
     }
@@ -130,7 +136,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   const handleAuthTypeChange = (value: AuthType) => {
     setAuthType(value);
     form.resetFields(["client_id", "client_secret", "username", "password"]);
-    setServiceAccountKey(null);
+    updateServiceAccountKey({});
   };
 
   const handleServiceAccountUpload: UploadProps["customRequest"] = (
@@ -150,11 +156,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
           jsonContent.private_key &&
           jsonContent.client_email
         ) {
-          setServiceAccountKey(jsonContent);
-          form.setFieldsValue({
-            project_id: jsonContent.project_id,
-          });
-
+          updateServiceAccountKey(jsonContent);
           message.success(`${(file as File).name} uploaded successfully`);
           onSuccess?.(jsonContent);
         } else {
@@ -176,7 +178,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   };
 
   const handleRemoveServiceAccount = () => {
-    setServiceAccountKey(null);
+    updateServiceAccountKey({});
     message.success("Service account key removed");
   };
 
@@ -231,16 +233,22 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 
 
   useEffect(() => {
-    if (serviceAccountKey && serviceAccountKey.token && authType == "oauth2") {
+
+    const isNewOauth2 = serviceAccountKey && serviceAccountKey?.token && authType == "oauth2";
+    const isNewServiceAccount = serviceAccountKey && serviceAccountKey?.type === "service_account"   && serviceAccountKey.private_key_id;
+    if (
+      isNewOauth2 ||
+      isNewServiceAccount
+    ) {
       getProjectsList();
     }
-  }, [serviceAccountKey.token, authType]);
+  }, [serviceAccountKey?.token, authType, serviceAccountKey?.type , serviceAccountKey.private_key_id]);
 
   useEffect(() => {
-    if (serviceAccountKey && serviceAccountKey.project_id && serviceAccountKey.instance_id) {
+    if (serviceAccountKey && serviceAccountKey?.project_id && serviceAccountKey?.instance_id) {
       getDatabaseList();
     }
-  }, [serviceAccountKey.project_id, serviceAccountKey.instance_id]);
+  }, [serviceAccountKey?.project_id, serviceAccountKey?.instance_id]);
 
 
   const handleGoogleLogin = () => {
@@ -316,6 +324,23 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     }, 500);
   };
 
+ const updateServiceAccountKey = (newData: any) => {
+  const newService = {
+      ...serviceAccountKey,
+      ...newData,
+  };
+    setServiceAccountKey((prevKey: any) => ({
+      ...prevKey,
+      ...newData,
+    }));
+    form.setFieldsValue({
+      project_id: newService.project_id,
+      instance_id: newService.instance_id,
+      database_id: newService.database_id,
+      graph_name: newService.graph_name,
+    });
+  };
+
   return (
     <Form
       form={form}
@@ -326,7 +351,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         max_sessions: 100,
         timeout: 30,
         read_only: true,
-        auth_type: "oauth2",
+        auth_type:  authType,
         database_type: "spanner",
       }}
     >
@@ -371,7 +396,6 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             <Select
               placeholder="Select authentication type"
               onChange={handleAuthTypeChange}
-              value={authType}
             >
               <Option value="oauth2">OAuth2</Option>
               <Option value="service_account">Service Account</Option>
@@ -493,11 +517,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                         showDownloadIcon: false,
                       }}
                     >
-                      {!serviceAccountKey && (
-                        <Button icon={<UploadOutlined />}>
-                          Upload Service Account Key (.json)
-                        </Button>
-                      )}
+                    <Button icon={<UploadOutlined />}>
+                     {serviceAccountKey && "Re-upload Service Account Key (.json)"}
+                      {!serviceAccountKey && "Upload Service Account Key (.json)"}
+                    </Button>
                     </Upload>
                     {serviceAccountKey && (
                       <div style={{ marginTop: 8, color: "#52c41a" }}>
@@ -519,19 +542,19 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
               >
                 {authType === "service_account" && (
                   <input
-                    style={{ width: "100%" }}
+                    style={{ width: "100%", height: 32 }}
                     disabled={authType === "service_account"}
                     value={serviceAccountKey?.project_id}
                   />
                 )}
                 {authType !== "service_account" && (
-                    <Select style={{ width: "100%" }} showSearch
+                    <Select style={{ width: "100%", height: 32 }} showSearch
                     loading={loading.listProjects}
                     placeholder={loading.listProjects ? "Loading projects..." : "Select a project"}
                     notFoundContent={loading.listProjects ? "Loading projects..." : "No projects found"}
                     value={serviceAccountKey?.project_id}
                     onChange={(value) => {
-                       setServiceAccountKey({
+                       updateServiceAccountKey({
                         ...serviceAccountKey,
                         project_id: value,
                         instance_id: null,
@@ -564,7 +587,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     String(option?.children)?.toLowerCase().includes(input.toLowerCase())
                   }
                   onChange={(value) => {
-                    setServiceAccountKey({
+                    updateServiceAccountKey({
                       ...serviceAccountKey,
                       instance_id: value,
                       database_id: null,
@@ -592,7 +615,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
               >
                 <Select style={{ width: "100%" }} showSearch
                   onChange={(value) => {
-                    setServiceAccountKey({
+                    updateServiceAccountKey({
                       ...serviceAccountKey,
                       database_id: value,
                       graph_name: null,
@@ -621,7 +644,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
               >
                 <Select style={{ width: "100%" }} showSearch
                   onChange={(value) => {
-                    setServiceAccountKey({
+                    updateServiceAccountKey({
                       ...serviceAccountKey,
                       graph_name: value,
                     });
