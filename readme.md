@@ -25,7 +25,7 @@ A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to 
     cd graphxr-database-proxy
     uv venv
     source .venv/bin/activate
-    uv pip install -e '.[ui]'
+    uv pip install -e ".[ui]"
     uv pip install -r requirements.txt
     cd frontend && npm install && npm run build && cd -
     graphxr-proxy --ui 
