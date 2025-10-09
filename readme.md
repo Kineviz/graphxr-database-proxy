@@ -36,7 +36,7 @@ A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to 
 4. Project Name: "Test"
 5. Database Type: "Google Cloud Spanner"
 6. Authentication Type: "Service Account"
-7. Upload the credential file you exported from GCP Console or gcloud CLI.
+7. Upload the credential file you exported from GCP Console or gcloud CLI. [Export Instructions](https://github.com/Kineviz/try-graphxr-spannergraph#)
 8. Select "Instance ID" e.g. "demo"
 9. Select "Database ID" e.g. "cymbal"
 10. Select "Property Graph" e.g. "ECommerceGraph"
