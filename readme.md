@@ -18,7 +18,7 @@ A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to 
 
 ## ⚡ Quick Start for Spanner Graph
 
-1. Run the following commands to start graphxr-database-proxy
+1. Run the following commands to start graphxr-database-proxy (requires [uv](https://docs.astral.sh/uv/), [node.js](https://nodejs.org/en/download/))
 
     ```
     git clone https://github.com/Kineviz/graphxr-database-proxy.git
