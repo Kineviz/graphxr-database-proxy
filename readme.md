@@ -31,7 +31,7 @@ A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to 
     graphxr-proxy --ui 
     ```
 
-2. Visit http://0.0.0.0:9080/
+2. Visit http://localhost:9080/
 3. Click "Create New Project"
 4. Project Name: "Test"
 5. Database Type: "Google Cloud Spanner"
