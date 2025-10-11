@@ -4,7 +4,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
 
-> **Language**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/blob/main/readme.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/readme.zh.md)
+> **Language**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/readme.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/readme.zh.md)
 
 A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to various backend databases with zero trust architecture.
 
