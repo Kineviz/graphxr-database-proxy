@@ -4,7 +4,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
 
-> **Language**: [English](README.md) | [中文](README.zh.md)
+> **Language**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/blob/main/readme.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/readme.zh.md)
 
 A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to various backend databases with zero trust architecture.
 
@@ -20,16 +20,16 @@ A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to 
 
 1. Run the following commands to start graphxr-database-proxy (requires [uv](https://docs.astral.sh/uv/), [node.js](https://nodejs.org/en/download/))
 
-    ```
-    git clone https://github.com/Kineviz/graphxr-database-proxy.git
-    cd graphxr-database-proxy
-    uv venv
-    source .venv/bin/activate # or .venv/bin/activate on Windows
-    uv pip install -e ".[ui]"
-    uv pip install -r requirements.txt
-    cd frontend && npm install && npm run build && cd -
-    graphxr-proxy --ui 
-    ```
+```
+git clone https://github.com/Kineviz/graphxr-database-proxy.git
+cd graphxr-database-proxy
+uv venv
+source .venv/bin/activate # or .venv/bin/activate on Windows
+uv pip install -e ".[ui]"
+uv pip install -r requirements.txt
+cd frontend && npm install && npm run build && cd -
+graphxr-proxy --ui 
+```
 
 2. Visit http://localhost:9080/
 3. Click "Create New Project"
@@ -55,6 +55,11 @@ pip install graphxr-database-proxy[ui]
 # Or from source
 git clone https://github.com/Kineviz/graphxr-database-proxy.git
 cd graphxr-database-proxy
+uv venv
+source .venv/bin/activate # or .venv/bin/activate on Windows
+uv pip install -e ".[ui]"
+uv pip install -r requirements.txt
+cd frontend && npm install && npm run build && cd -
 pip install -e .[ui]
 ```
 
@@ -63,39 +68,49 @@ pip install -e .[ui]
 **Option 1: Web UI (Recommended)**
 ```bash
 graphxr-proxy --ui
-# Open http://localhost:8080/admin for configuration
 ```
+> Open http://localhost:9080/admin for configuration
 
-**Option 2: Environment Variables**
-```bash
-export GRAPHXR_SPANNER_PROJECT_ID=your-project-id
-export GRAPHXR_SPANNER_INSTANCE_ID=your-instance
-export GOOGLE_OAUTH_CLIENT_ID=your-client-id
-graphxr-proxy
-```
-
-**Option 3: Python Code**
+**Option 2: Python Code**
 ```python
 from graphxr_database_proxy import DatabaseProxy
 
 proxy = DatabaseProxy()
-proxy.add_database(
-    name="spanner_main",
-    type="spanner",
-    project_id="your-project-id",
-    auth_type="oauth2"
+
+service_account_json = {
+    "type": "service_account",
+    "project_id": "your-gcp-project-id",
+    "private_key": "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n",
+    "client_email": "your-service-account@your-gcp-project-id.iam.gserviceaccount.com",
+    ...
+}
+
+project_id = proxy.add_project(
+    project_name="project_name",
+    database_type="spanner",
+    project_id="gcp-project-id", 
+    instance_id="spanner-instance-id",
+    database_id="spanner-database-id",
+    credentials=service_account_json,  
+    graph_name="graph_name"  # Optional
 )
-proxy.start(port=3002)
+
+proxy.start(
+    host="0.0.0.0",     
+    port=9080,          
+    show_apis=True     
+)
 ```
 
 ## 🐳 Docker
 
 ```bash
-docker run -d -p 3002:3002 \
-  -e GRAPHXR_SPANNER_PROJECT_ID=your-project-id \
-  kineviz/graphxr-database-proxy:latest
+docker run -d -p 9080:9080 \
+--name graphxr-database-proxy \
+-v ${HOME}/graphxr-database-proxy/config:/app/config \
+kineviz/graphxr-database-proxy:latest
 ```
-
+> You can visit http://localhost:9080/admin for configuration after starting the container.
 
 
 

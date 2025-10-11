@@ -9,7 +9,8 @@ __author__ = "Kineviz"
 __email__ = "support@kineviz.com"
 
 from .main import app
+from .proxy import DatabaseProxy
 from .models.project import Project, DatabaseConfig
 from .services.project_service import ProjectService
 
-__all__ = ["app", "Project", "DatabaseConfig", "ProjectService"]
+__all__ = ["app", "DatabaseProxy", "Project", "DatabaseConfig", "ProjectService"]

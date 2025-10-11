@@ -49,21 +49,32 @@ async def health_check():
         "auto_reload": "enabled"
     }
 
-# Mount static files from frontend build AFTER API routers
+# Mount static files from package
+static_dir = Path(__file__).parent / "static"
 frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
-if frontend_dist.exists():
-    # Mount static files to serve frontend, but not override API routes
-    app.mount("/static", StaticFiles(directory=str(frontend_dist)), name="static")
+ 
+if static_dir.exists() or frontend_dist.exists():
+    static_dir = frontend_dist if frontend_dist.exists() else static_dir
+    print(f"🔧 Serving static files from: {static_dir}")
+    # Development: Use frontend dist directory
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
     
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
         """Serve the frontend application for all unmatched paths"""
-        return FileResponse(str(frontend_dist / "index.html"))
+        index_file = static_dir / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+        return {"message": "Frontend not available"}
+        
 else:
     @app.get("/")
     async def serve_fallback():
         """Fallback when frontend is not built"""
-        return {"message": "Frontend not built. Please run 'npm run build' in the frontend directory."}
+        return {
+            "message": "Frontend not available", 
+            "hint": "Run 'python scripts/build_frontend.py' to build and package frontend"
+        }
 
 
 def main():

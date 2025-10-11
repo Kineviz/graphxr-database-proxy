@@ -91,15 +91,15 @@ run() {
 
   case "$1" in
      release)
-     docker_build $1
-     docker_push $1
+     docker_build latest
+     docker_push latest
         ;;
     source)
      source_build
         ;;
     aliyun)
-     docker_build release
-     aliyun_push release
+     docker_build latest
+     aliyun_push latest
         ;;
     *)
         echo "$USAGE"

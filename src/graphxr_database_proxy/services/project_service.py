@@ -4,6 +4,7 @@ Project service for managing projects and their configurations
 
 import json
 import os
+import re
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -41,12 +42,26 @@ class ProjectService:
     
     async def create_project(self, project_data: ProjectCreate) -> Project:
         """Create a new project"""
+        name = project_data.name or str(uuid.uuid4())
         project_id = str(uuid.uuid4())
         now = datetime.utcnow()
-        
+
+        ## name should be unique and only allow alphanumeric, underscore, hyphen
+        ## Auto remove invalid characters
+        name = re.sub(r'[^a-zA-Z0-9_-]', '', name)
+        exist_project = await self.get_project_by_name(name)
+        if exist_project:
+            #update existing project
+            await self.update_project(exist_project.id, ProjectUpdate(
+                name=project_data.name,
+                database_type=project_data.database_type,
+                database_config=project_data.database_config
+            ))
+            return exist_project
+
         project = Project(
             id=project_id,
-            name=project_data.name,
+            name=name,
             database_type=project_data.database_type,
             database_config=project_data.database_config,
             create_time=now,

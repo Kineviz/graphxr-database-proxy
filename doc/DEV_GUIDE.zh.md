@@ -1,6 +1,6 @@
 # 开发环境指南
 
-> **语言**: [English](DEV_GUIDE.md) | [中文](DEV_GUIDE.zh.md)
+> **Language**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.zh.md)
 
 ## 🚀 快速开始
 
@@ -56,6 +56,5 @@ npm run dev:frontend   # 只启动前端
 ├── frontend/               # React 前端源码
 ├── config/                 # 配置文件
 ├── nodemon.json           # nodemon 配置
-├── package.json           # npm 脚本和依赖
-└── dev.bat               # Windows 开发启动脚本
+└── package.json           # npm 脚本和依赖
 ```

@@ -1,6 +1,6 @@
 # Development Environment Guide
 
-> **Language**: [English](DEV_GUIDE.md) | [中文](DEV_GUIDE.zh.md)
+> **Language**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.zh.md)
 
 ## 🚀 Quick Start
 
@@ -56,6 +56,5 @@ In the nodemon console, type `rs` to manually restart the backend service.
 ├── frontend/               # React frontend source code
 ├── config/                 # Configuration files
 ├── nodemon.json           # nodemon configuration
-├── package.json           # npm scripts and dependencies
-└── dev.bat               # Windows development startup script
+└── package.json           # npm scripts and dependencies
 ```

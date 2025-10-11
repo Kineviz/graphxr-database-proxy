@@ -1,0 +1,113 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*'  # 当推送版本标签时触发 (例如: v1.0.0)
+  
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      target:
+        description: 'Publish target'
+        required: true
+        default: 'testpypi'
+        type: choice
+        options:
+        - testpypi
+        - pypi
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+    
+    - name: Build package
+      run: |
+        echo "🔄 Building package..."
+        python -m build
+        echo "✅ Package built successfully"
+    
+    - name: Check package
+      run: |
+        echo "🔍 Checking package..."
+        twine check dist/*
+        echo "✅ Package check passed"
+    
+    - name: List built files
+      run: |
+        echo "📦 Built files:"
+        ls -la dist/
+    
+    # 发布到 TestPyPI (手动触发或开发分支)
+    - name: Publish to TestPyPI
+      if: ${{ github.event.inputs.target == 'testpypi' || (github.event_name == 'push' && contains(github.ref, 'alpha')) }}
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      run: |
+        echo "🧪 Publishing to TestPyPI..."
+        twine upload --repository testpypi dist/*
+        echo "✅ Published to TestPyPI successfully"
+    
+    # 发布到正式 PyPI (标签发布)
+    - name: Publish to PyPI
+      if: ${{ github.event.inputs.target == 'pypi' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'alpha')) }}
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        echo "🚀 Publishing to PyPI..."
+        twine upload dist/*
+        echo "✅ Published to PyPI successfully"
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          🎉 GraphXR Database Proxy ${{ github.ref }} Released!
+          
+          ## 📦 Installation
+          ```bash
+          pip install graphxr-database-proxy==${{ github.ref_name }}
+          ```
+          
+          ## 🔗 Links
+          - [PyPI Package](https://pypi.org/project/graphxr-database-proxy/${{ github.ref_name }}/)
+          - [Documentation](https://docs.kineviz.com/graphxr-database-proxy)
+          - [Changelog](https://github.com/Kineviz/graphxr-database-proxy/blob/main/CHANGELOG.md)
+          
+          ## 🚀 Quick Start
+          ```python
+          from graphxr_database_proxy import DatabaseProxy
+          
+          proxy = DatabaseProxy()
+          project_id = proxy.add_project(
+              project_name="MyProject",
+              database_type="spanner",
+              project_id="your-gcp-project-id",
+              instance_id="your-spanner-instance-id",
+              database_id="your-database-id",
+              credentials="./service-account.json"
+          )
+          proxy.start()
+          ```
+        draft: false
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}

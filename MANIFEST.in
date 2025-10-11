@@ -1,0 +1,28 @@
+# 包含静态文件
+recursive-include src/graphxr_database_proxy/static *
+
+# 包含文档文件
+include README.md
+include LICENSE
+include *.md
+
+# 包含配置文件
+include pyproject.toml
+include requirements.txt
+
+# 包含示例和文档
+recursive-include examples *.py
+recursive-include doc *.md
+
+# 排除不需要的文件
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *~
+global-exclude .git*
+global-exclude .env*
+prune .venv
+prune __pycache__
+prune .pytest_cache
+prune node_modules
+prune frontend/node_modules
+prune frontend/.webpack-cache

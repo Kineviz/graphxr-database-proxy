@@ -78,7 +78,7 @@ class DatabaseConfig(BaseModel):
 class Project(BaseModel):
     """Project model"""
     id: str = Field(..., description="Unique project identifier")
-    name: str = Field(..., description="Project name")
+    name: str = Field(..., description="Project name (should be unique)")
     database_type: DatabaseType = Field(..., description="Database type")
     database_config: DatabaseConfig = Field(..., description="Database configuration")
     create_time: datetime = Field(default_factory=datetime.utcnow)

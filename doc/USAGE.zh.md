@@ -1,6 +1,6 @@
 # GraphXR Database Proxy - 使用指南
 
-> **语言**: [English](USAGE.md) | [中文](USAGE.zh.md)
+> **语言**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/USAGE.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/USAGE.zh.md)
 
 ## 🚀 快速启动
 
@@ -177,12 +177,17 @@ graphxr-database-proxy/
 ### Docker 部署
 ```bash
 # 构建镜像
-docker build -t graphxr-database-proxy .
+docker build -t kineviz/graphxr-database-proxy .
 
 # 运行容器
 docker run -p 9080:9080 \
-  -v $(pwd)/projects.json:/app/projects.json \
-  graphxr-database-proxy
+  -v $(pwd)/config:/app/config \
+  kineviz/graphxr-database-proxy:latest
+```
+
+或者脚本方式:
+```bash
+./docker/publish.sh release
 ```
 
 ## 🆘 故障排除
