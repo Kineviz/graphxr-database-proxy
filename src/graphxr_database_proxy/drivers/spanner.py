@@ -126,6 +126,9 @@ class SpannerDriver(BaseDatabaseDriver):
         
         if not self.config.oauth_config.client_id or not self.config.oauth_config.client_secret:
             default_oauth = get_default_oauth_config()
+            #empty dict check
+            if default_oauth == {}:
+                raise ValueError("OAuth configuration file not found and client_id/client_secret not provided. Please ensure config/default.google.localhost.oauth.json exists or provide complete OAuth configuration.")
             self.config.oauth_config.client_id = default_oauth.get("client_id")
             self.config.oauth_config.client_secret = default_oauth.get("client_secret")
 
@@ -459,7 +462,7 @@ class SpannerDriver(BaseDatabaseDriver):
                 names = [name.strip() for name in names if name.strip()]
                 defineCategoriesOrRels = definMata.categories if row_type == "category" else definMata.relationships
                 ## find the category or relationship from names
-                defineCategoryOrRel = next((cat for cat in defineCategoriesOrRels if cat.name in names), None)
+                defineCategoryOrRel = next((cat for cat in defineCategoriesOrRels.values() if cat.name in names), None)
 
                 for name in names:
                     if row_type == "category" and name not in meta["categories"]:
@@ -716,12 +719,12 @@ class SpannerDriver(BaseDatabaseDriver):
                 }
             
             if self._is_schema_less(meta_json):
-                # Convert meta dict to GraphSchema before passing to _getSchemaForSchemaLessGraphs
-                initial_schema = GraphSchema(
-                    categories=[Category(**cat) for cat in meta["categories"].values()],
-                    relationships=[Relationship(**rel) for rel in meta["relationships"].values()]
+                # Convert dict to GraphSchemaMap before calling the method
+                schema_map = GraphSchemaMap(
+                    categories={name: Category(**cat_data) for name, cat_data in meta["categories"].items()},
+                    relationships={name: Relationship(**rel_data) for name, rel_data in meta["relationships"].items()}
                 )
-                meta = self._getSchemaForSchemaLessGraphs(initial_schema)
+                meta = self._getSchemaForSchemaLessGraphs(schema_map)
                 return GraphSchemaResponse(
                     success=True,
                     data=meta,

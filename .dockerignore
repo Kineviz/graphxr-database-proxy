@@ -125,7 +125,6 @@ config/credentials.json
 config/service-account.json
 config/*-credentials.json
 config/*-oauth*.json
-
 # Test files
 test_*.py
 *_test.py

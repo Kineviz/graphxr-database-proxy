@@ -83,6 +83,8 @@ async def list_google_projects(request: Request):
         auth = body.get('auth', {})
 
         default_oauth = get_default_oauth_config()
+        if default_oauth is None:
+            default_oauth = {}  # Use empty dict if config file doesn't exist
         newAuth = { **default_oauth, **auth }
 
         credentials, project_id = get_google_credentials(newAuth)
@@ -158,6 +160,8 @@ async def list_google_databases(
         project_id = auth.get('project_id')
         instance_id = auth.get('instance_id')
         default_oauth = get_default_oauth_config()
+        if default_oauth is None:
+            default_oauth = {}  # Use empty dict if config file doesn't exist
         newAuth = { **default_oauth, **auth }
         credentials, _ = get_google_credentials(newAuth)
 
@@ -228,6 +232,8 @@ async def google_spanner_callback(request: Request):
             raise HTTPException(status_code=400, detail="OAuth login only allowed from localhost")
 
         default_oauth = get_default_oauth_config()
+        if default_oauth == {}:
+            raise HTTPException(status_code=500, detail="OAuth configuration file not found. Please ensure config/default.google.localhost.oauth.json exists.")
         client_id = default_oauth.get("client_id")
         client_secret = default_oauth.get("client_secret")
 
@@ -352,13 +358,18 @@ async def google_spanner_login(request: Request):
         host = request.headers.get('host')
         if(host.startswith("localhost") == False):
             raise HTTPException(status_code=400, detail="OAuth login only allowed from localhost")
-        # Read from config/default.google.localhost.auth.json
+        # Read from config/default.google.localhost.oauth.json
         try:
             default_oauth = get_default_oauth_config()
+            if default_oauth == {}:
+                raise HTTPException(status_code=500, detail="OAuth configuration file not found. Please ensure config/default.google.localhost.oauth.json exists or provide OAuth configuration through environment variables.")
+            
             client_id = default_oauth.get("client_id")
             
             if not client_id:
                 raise HTTPException(status_code=500, detail="client_id not found in config file")
+        except HTTPException:
+            raise  # Re-raise HTTPException as-is
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"OAuth configuration error: {e}")
 

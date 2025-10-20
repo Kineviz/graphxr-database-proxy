@@ -341,6 +341,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     });
   };
 
+  const isServiceAccount = serviceAccountKey && serviceAccountKey?.type === "service_account" && serviceAccountKey.private_key_id;
+  const isGoogleOauth2 = serviceAccountKey && serviceAccountKey?.token && authType == "oauth2";
+
   return (
     <Form
       form={form}
@@ -414,7 +417,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
           {authType === "oauth2" && (
             <Card title="OAuth2 Configuration" size="small" type="inner">
               <Row gutter={16}>
-                {serviceAccountKey?.email && (
+                {isGoogleOauth2 && (
                   <Col span={12}>
                     <Button type="link">
                       <span>
@@ -432,7 +435,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                     style={{ width: "100%", marginBottom: 16 }}
                     onClick={handleGoogleLogin}
                   >
-                    {serviceAccountKey?.email
+                    {isGoogleOauth2
                       ? "Re-login with Google"
                       : "Login with Google"}
                   </Button>
@@ -518,11 +521,11 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
                       }}
                     >
                     <Button icon={<UploadOutlined />}>
-                     {serviceAccountKey && "Re-upload Service Account Key (.json)"}
-                      {!serviceAccountKey && "Upload Service Account Key (.json)"}
+                     {isServiceAccount && "Re-upload Service Account Key (.json)"}
+                      {!isServiceAccount && "Upload Service Account Key (.json)"}
                     </Button>
                     </Upload>
-                    {serviceAccountKey && (
+                    {isServiceAccount && (
                       <div style={{ marginTop: 8, color: "#52c41a" }}>
                         ✅ Service account key uploaded successfully
                       </div>

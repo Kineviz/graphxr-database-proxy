@@ -93,8 +93,8 @@ python -m build --wheel    # wheel 包
 ```
 
 构建成功后，`dist/` 目录将包含：
-- `graphxr-database-proxy-1.0.0.tar.gz` (源码包)
-- `graphxr_database_proxy-1.0.0-py3-none-any.whl` (wheel 包)
+- `graphxr-database-proxy-1.0.1.tar.gz` (源码包)
+- `graphxr_database_proxy-1.0.1-py3-none-any.whl` (wheel 包)
 
 ### 步骤 3: 验证包内容
 
@@ -103,7 +103,7 @@ python -m build --wheel    # wheel 包
 twine check dist/*
 
 # 查看包文件列表
-tar -tzf dist/graphxr-database-proxy-1.0.0.tar.gz
+tar -tzf dist/graphxr-database-proxy-1.0.1.tar.gz
 ```
 
 ### 步骤 4: 测试发布 (TestPyPI)

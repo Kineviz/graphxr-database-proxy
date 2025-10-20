@@ -21,13 +21,18 @@ def read_json_file(file_path):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading config file: {e}")
     
-def get_default_oauth_config():
-    """Get default OAuth config from config/default.google.localhost.auth.json"""
+def get_default_oauth_config() -> dict:
+    """Get default OAuth config from config/default.google.localhost.oauth.json"""
     try:
         # Get the project root directory (assuming this file is in src/graphxr_database_proxy/api/)
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.join(current_dir, '..', '..', '..')
-        config_path = os.path.join(project_root, 'config', 'default.google.localhost.auth.json')
+        config_path = os.path.join(project_root, 'config', 'default.google.localhost.oauth.json')
+        
+        # Check if config file exists
+        if not os.path.exists(config_path):
+            return {}  # Return empty dict if config file doesn't exist
+            
         default_oauth = read_json_file(config_path).get("web", {})
         client_id = default_oauth.get("client_id")
         client_secret = default_oauth.get("client_secret")
