@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 DatabaseProxy - High-level interface for GraphXR Database Proxy
 """
@@ -243,7 +244,7 @@ class DatabaseProxy:
             # No running event loop, run synchronously
             asyncio.run(self._save_project_async(project))
         
-        print(f"✅ Added Spanner project: {project_name}")
+        print(f"[SUCCESS] Added Spanner project: {project_name}")
         print(f"   GCP Project ID: {project_id}")
         print(f"   Instance ID: {instance_id}")
         print(f"   Database ID: {database_id}")
@@ -321,9 +322,9 @@ class DatabaseProxy:
         if project_id in self.projects:
             project = self.projects[project_id]
             del self.projects[project_id]
-            print(f"✅ Removed project: {project.name}")
+            print(f"[SUCCESS] Removed project: {project.name}")
             return True
-        print(f"❌ Project not found: {project_id}")
+        print(f"[ERROR] Project not found: {project_id}")
         return False
     
     def remove_database(self, project_id: str) -> bool:
@@ -457,11 +458,11 @@ class DatabaseProxy:
             port: Port to bind to (default: 9080)
             show_apis: Show API endpoints information (default: True)
         """
-        print("\n🚀 Starting GraphXR Database Proxy...")
+        print("\n[START] Starting GraphXR Database Proxy...")
         print(f"   Web UI: http://{host if host != '0.0.0.0' else 'localhost'}:{port}")
         
         if show_apis and self.projects:
-            print("\n📡 Available API Endpoints:")
+            print("\n[API] Available API Endpoints:")
             for project_id, project in self.projects.items():
                 databaseType = project.database_type._value_ if hasattr(project.database_type, '_value_') else project.database_type
                 print(f"   Project: {project.name}")
@@ -487,9 +488,9 @@ class DatabaseProxy:
                 log_level="info" if not dev else "debug"
             )
         except KeyboardInterrupt:
-            print("\n⏹️  Stopping GraphXR Database Proxy...")
+            print("\n[STOP] Stopping GraphXR Database Proxy...")
             self.stop()
     
     def stop(self) -> None:
         """Stop the server"""
-        print("✅ GraphXR Database Proxy stopped")
+        print("[SUCCESS] GraphXR Database Proxy stopped")

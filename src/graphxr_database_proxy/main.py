@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Main FastAPI application
 """
@@ -55,7 +56,7 @@ frontend_dist = Path(__file__).parent.parent.parent / "frontend" / "dist"
  
 if static_dir.exists() or frontend_dist.exists():
     static_dir = frontend_dist if frontend_dist.exists() else static_dir
-    print(f"🔧 Serving static files from: {static_dir}")
+    print(f"[INFO] Serving static files from: {static_dir}")
     # Development: Use frontend dist directory
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
     

@@ -17,7 +17,7 @@ import google.oauth2.credentials
 import re
 
 from .base import BaseDatabaseDriver
-from ..models.project import Project, GraphSchema, QueryData, QueryResponse, SchemaResponse, GraphSchemaResponse, SampleDataResponse, AuthType, Category, Relationship
+from ..models.project import Project, GraphSchema, GraphSchemaMap, QueryData, QueryResponse, SchemaResponse, GraphSchemaResponse, SampleDataResponse, AuthType, Category, Relationship
 from ..common.util import get_default_oauth_config
 from ..services.project_service import ProjectService
 
@@ -131,9 +131,9 @@ class SpannerDriver(BaseDatabaseDriver):
 
         oauth_info = self.config.oauth_config
         
-        # print(f"🔑 OAuth Client ID: {oauth_info.client_id[:10]}..." if oauth_info.client_id else "None")
-        # print(f"🎫 Token available: {'Yes' if oauth_info.token else 'No'}")
-        # print(f"🔄 Refresh token available: {'Yes' if oauth_info.refresh_token else 'No'}")
+        # print(f"[OAuth] Client ID: {oauth_info.client_id[:10]}..." if oauth_info.client_id else "None")
+        # print(f"[OAuth] Token available: {'Yes' if oauth_info.token else 'No'}")
+        # print(f"[OAuth] Refresh token available: {'Yes' if oauth_info.refresh_token else 'No'}")
         
         # Create credentials with proper scopes for Spanner
         credentials = google.oauth2.credentials.Credentials(
@@ -359,10 +359,14 @@ class SpannerDriver(BaseDatabaseDriver):
                     is_dynamic_label = node_or_edge.get("properties", {}).get("label")
                     labels = node_or_edge.get("labels", [])
                     last_label = is_dynamic_label or (labels[-1] if labels else "")
-                    
-                    properties = (node_or_edge.get("properties", {}).get("properties") or 
-                                node_or_edge.get("properties", {}))
-                    
+
+                    properties = node_or_edge.get("properties", {})
+                    ## if schema-less, properties has properties field, merge it into properties, then remove properties field
+                    if properties and isinstance(properties, dict) and "properties" in properties:
+                        merged_properties = properties.get("properties", {})
+                        properties.update(merged_properties)
+                        del properties["properties"]
+
                     if node_or_edge.get("kind") == "node":
                         graph["nodes"][node_or_edge.get("identifier")] = {
                             "id": node_or_edge.get("identifier"),
@@ -426,7 +430,7 @@ class SpannerDriver(BaseDatabaseDriver):
         return has_dynamic_node_table or has_dynamic_edge_table
     
 
-    def _getSchemaForSchemaLessGraphs(self) -> GraphSchema:
+    def _getSchemaForSchemaLessGraphs(self, definMata:GraphSchemaMap) -> GraphSchema:
         """Get schema for schema-less graphs"""
         try:
             # First query to get labels for nodes and relationships
@@ -453,13 +457,17 @@ class SpannerDriver(BaseDatabaseDriver):
                 names = row["name"].split(",")
                 row_type = row["type"]
                 names = [name.strip() for name in names if name.strip()]
-                
+                defineCategoriesOrRels = definMata.categories if row_type == "category" else definMata.relationships
+                ## find the category or relationship from names
+                defineCategoryOrRel = next((cat for cat in defineCategoriesOrRels if cat.name in names), None)
+
                 for name in names:
                     if row_type == "category" and name not in meta["categories"]:
                         meta["categories"][name] = {
                             "name": name,
                             "props": [],
-                            "keys": [],
+                            "keys": defineCategoryOrRel.keys if defineCategoryOrRel else [],
+                            "keysTypes": defineCategoryOrRel.keysTypes if defineCategoryOrRel else {},
                             "propsTypes": {}
                         }
                     elif row_type == "relationship" and name not in meta["relationships"]:
@@ -475,7 +483,8 @@ class SpannerDriver(BaseDatabaseDriver):
                         meta["relationships"][name] = {
                             "name": name,
                             "props": [],
-                            "keys": [],
+                            "keys": defineCategoryOrRel.keys if defineCategoryOrRel else [],
+                            "keysTypes": defineCategoryOrRel.keysTypes if defineCategoryOrRel else {},
                             "propsTypes": {},
                             "startCategory": start_category,
                             "endCategory": end_category
@@ -531,7 +540,13 @@ class SpannerDriver(BaseDatabaseDriver):
                                     if label != data.get("element_definition_name")), None)
                     
                     if category and category in meta["categories"]:
-                        properties = data.get("properties", {}).get("properties", {})
+                        properties = data.get("properties", {})
+                        ## if schema-less, properties has properties field, merge it into properties, then remove properties field
+                        if properties and isinstance(properties, dict) and "properties" in properties:
+                            merged_properties = properties.get("properties", {})
+                            properties.update(merged_properties)
+                            del properties["properties"]
+
                         props_type_map = {}
                         for key, value in properties.items():
                             props_type_map[key] = type(value).__name__.upper()
@@ -571,7 +586,12 @@ class SpannerDriver(BaseDatabaseDriver):
                                         if label != end_data.get("element_definition_name")), None)
                     
                     if relationship and relationship in meta["relationships"]:
-                        properties = data.get("properties", {}).get("properties", {})
+                        properties = data.get("properties", {})
+                        if properties and isinstance(properties, dict) and "properties" in properties:
+                            merged_properties = properties.get("properties", {})
+                            properties.update(merged_properties)
+                            del properties["properties"]
+
                         props_type_map = {}
                         for key, value in properties.items():
                             props_type_map[key] = type(value).__name__.upper()
@@ -629,14 +649,6 @@ class SpannerDriver(BaseDatabaseDriver):
                     execution_time= time.time() - start_time
                 )
 
-            if self._is_schema_less(meta_json):
-                meta = self._getSchemaForSchemaLessGraphs()
-                return GraphSchemaResponse(
-                    success=True,
-                    data=meta,
-                    execution_time= time.time() - start_time
-                )
-
             # Build property declarations map
             property_declarations_map = {}
             for prop_decl in meta_json.get("propertyDeclarations", []):
@@ -658,6 +670,8 @@ class SpannerDriver(BaseDatabaseDriver):
                                 property_declarations_map.get(prop_def.get("valueExpressionSql")) or 
                                 "string")
                     props_types[prop_name] = prop_type
+                keys = node_table.get("keyColumns", [])
+                keys_types = {key: props_types.get(key, "string") for key in keys}
                 
                 table_name = (node_table.get("baseTableName") or 
                             node_table.get("name") or 
@@ -668,7 +682,8 @@ class SpannerDriver(BaseDatabaseDriver):
                     "name": category_name,
                     "props": list(props_types.keys()),
                     "propsTypes": props_types or {},
-                    "keys": node_table.get("keyColumns", [])
+                    "keys":  keys,
+                    "keysTypes": keys_types
                 }
             
             # Process edges as relationships
@@ -684,7 +699,9 @@ class SpannerDriver(BaseDatabaseDriver):
                                 property_declarations_map.get(prop_def.get("valueExpressionSql")) or 
                                 "string")
                     props_types[prop_name] = prop_type
-                
+                keys = edge_table.get("keyColumns", [])
+                keys_types = {key: props_types.get(key, "string") for key in keys}
+
                 source_node_table = edge_table.get("sourceNodeTable", {}).get("nodeTableName")
                 dest_node_table = edge_table.get("destinationNodeTable", {}).get("nodeTableName")
                 
@@ -692,15 +709,33 @@ class SpannerDriver(BaseDatabaseDriver):
                     "name": relationship_name,
                     "propsTypes": props_types or {},
                     "props": list(props_types.keys()),
-                    "keys": edge_table.get("keyColumns", []),
+                    "keys": keys,
+                    "keysTypes": keys_types,
                     "startCategory": node_table_label_map.get(source_node_table, source_node_table),
                     "endCategory": node_table_label_map.get(dest_node_table, dest_node_table)
                 }
+            
+            if self._is_schema_less(meta_json):
+                # Convert meta dict to GraphSchema before passing to _getSchemaForSchemaLessGraphs
+                initial_schema = GraphSchema(
+                    categories=[Category(**cat) for cat in meta["categories"].values()],
+                    relationships=[Relationship(**rel) for rel in meta["relationships"].values()]
+                )
+                meta = self._getSchemaForSchemaLessGraphs(initial_schema)
+                return GraphSchemaResponse(
+                    success=True,
+                    data=meta,
+                    execution_time= time.time() - start_time
+                )
 
-            return GraphSchemaResponse(success=True, data={
-                "categories": list(meta["categories"].values()),
-                "relationships": list(meta["relationships"].values())
-            })
+            return GraphSchemaResponse(
+                success=True, 
+                data=GraphSchema(
+                    categories=[Category(**cat) for cat in meta["categories"].values()],
+                    relationships=[Relationship(**rel) for rel in meta["relationships"].values()]
+                ),
+                execution_time= time.time() - start_time
+            )
         
         except Exception as e:
             return GraphSchemaResponse(success=False, error=str(e))

@@ -134,12 +134,15 @@ class Category(BaseModel):
     name: str
     props: Optional[List[str]] = None
     keys: Optional[List[str]] = None
+    keysTypes: Optional[Dict[str, str]] = None
     propsTypes: Optional[Dict[str, str]] = None
+    
 
 class Relationship(BaseModel):
     name: str
     props: Optional[List[str]] = None
     keys: Optional[List[str]] = None
+    keysTypes: Optional[Dict[str, str]] = None
     propsTypes: Optional[Dict[str, str]] = None
     startCategory: str
     endCategory: str
@@ -147,6 +150,10 @@ class Relationship(BaseModel):
 class GraphSchema(BaseModel):
     categories: List[Category] 
     relationships: List[Relationship]
+
+class GraphSchemaMap(BaseModel):
+    categories: Dict[str, Category]
+    relationships: Dict[str, Relationship]
 
 class GraphSchemaResponse(BaseModel):
     """Graph database schema response"""
