@@ -13,7 +13,7 @@ Supports two Service Account authentication methods:
 from graphxr_database_proxy import DatabaseProxy
 
 
-def quick_start_with_file():
+def quick_start_with_service_account_file():
     """Quick start example using file path"""
     
     print("🚀 GraphXR Database Proxy - Using File Path")
@@ -36,7 +36,7 @@ def quick_start_with_file():
     proxy.start(port=3002)
 
 
-def quick_start_with_json():
+def quick_start_with_service_account_json():
     """Quick start example using JSON string"""
     
     print("🚀 GraphXR Database Proxy - Using JSON String")
@@ -74,9 +74,39 @@ def quick_start_with_json():
     proxy.start(port=3002)
 
 
+def quick_start_with_google_ADC_json():
+    """Quick start example using JSON string"""
+    
+    print("🚀 GraphXR Database Proxy - Using JSON String")
+    print("=" * 50)
+    
+    # Create proxy instance
+    proxy = DatabaseProxy()
+    
+    # Method 2: Using JSON string (replace with your actual Service Account JSON)
+    service_account_json = '''
+    {
+        "type": "google_ADC"
+    }
+    '''
+    
+    proxy.add_project(
+        project_name="spanner_adc",                    # Project name
+        database_type="spanner",                            # Database type
+        project_id="your-gcp-project-id",                  # Your GCP project ID
+        instance_id="your-spanner-instance-id",            # Your Spanner instance ID  
+        database_id="your-database-id",                    # Your Spanner database ID
+        credentials=service_account_json                    # Service Account JSON string
+    )
+    
+    # Start server
+    proxy.start(port=3002)
+
+
+
 def quick_start():
     """Default quick start example - using file path"""
-    quick_start_with_file()
+    quick_start_with_service_account_file()
 
 
 if __name__ == "__main__":
@@ -84,10 +114,13 @@ if __name__ == "__main__":
     
     if len(sys.argv) > 1 and sys.argv[1] == "json":
         # Use JSON string method
-        quick_start_with_json()
+        quick_start_with_service_account_json()
+    elif len(sys.argv) > 1 and sys.argv[1] == "adc":
+        # Use Google ADC JSON string method
+        quick_start_with_google_ADC_json()
     else:
         # Default to file path method
-        quick_start_with_file()
+        quick_start_with_service_account_file()
     
     print("\n💡 Usage tips:")
     print("  - Use file path (default): python quick_start.py")

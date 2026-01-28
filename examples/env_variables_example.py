@@ -191,6 +191,7 @@ def check_environment_variables():
         'SPANNER_INSTANCE_ID': 'Spanner instance ID',
         'SPANNER_DATABASE_ID': 'Spanner database ID', 
         'SPANNER_CREDENTIALS_PATH': 'Path to service account JSON',
+        'SPANNER_CREDENTIALS_JSON': 'Service account JSON string',
         'SPANNER_GRAPH_NAME': 'Graph name'
     }
     

@@ -5,7 +5,8 @@
   "main": "src/graphxr_database_proxy/main.py",
   "scripts": {
     "dev": "concurrently -c \"blue,green\" -n \"Backend,Frontend\" \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "nodemon --config nodemon.json",
+    "dev:backend": "nodemon --config nodemon.uv.json",
+    "dev:backend:system": "nodemon --config nodemon.system.json",
     "dev:frontend": "cd frontend && npm start",
     "build": "cd frontend && npm run build",
     "build:frontend": "cd frontend && npm run build",

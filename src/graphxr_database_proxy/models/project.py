@@ -34,6 +34,7 @@ class AuthType(str, Enum):
     OAUTH2 = "oauth2"
     SERVICE_ACCOUNT = "service_account"
     USERNAME_PASSWORD = "username_password"
+    GOOGLE_ADC = "google_ADC"
 
 
 class OAuthConfig(BaseModel):

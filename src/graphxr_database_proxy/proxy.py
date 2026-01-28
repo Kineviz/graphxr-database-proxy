@@ -69,6 +69,7 @@ class DatabaseProxy:
                         - Path to credential file (e.g., "/path/to/service-account.json")
                         - Credential JSON string (e.g., '{"type": "service_account", ...}')
                         Uses env var SPANNER_CREDENTIALS_PATH if not provided
+                        Or SPANNER_CREDENTIALS_JSON for JSON string
             graph_name: Optional graph name (uses env var SPANNER_GRAPH_NAME if not provided)
             **kwargs: Additional database-specific configuration parameters
         
@@ -78,6 +79,7 @@ class DatabaseProxy:
             SPANNER_INSTANCE_ID: Default Spanner instance ID
             SPANNER_DATABASE_ID: Default Spanner database ID
             SPANNER_CREDENTIALS_PATH: Default path to service account JSON file
+            SPANNER_CREDENTIALS_JSON: Default service account JSON string
             SPANNER_GRAPH_NAME: Default graph name
         
         Returns:
@@ -102,18 +104,29 @@ class DatabaseProxy:
                 database_id="your-database-id",
                 credentials='{"type": "service_account"}'
             )
+
+        Example 3 (Spanner with Google Cloud ADC):
+            proxy.add_project(
+                project_name="MySpannerProject",
+                database_type="spanner",
+                project_id="your-gcp-project-id",
+                instance_id="your-spanner-instance-id",
+                database_id="your-database-id",
+                credentials='{"type": "google_ADC"}'
+            )
             
-        Example 3 (Using environment variables):
+        Example 4 (Using environment variables):
             # Set environment variables first
             # os.environ['PROJECT_NAME'] = 'MySpannerProject'
             # os.environ['SPANNER_PROJECT_ID'] = 'your-gcp-project-id'
             # os.environ['SPANNER_INSTANCE_ID'] = 'your-spanner-instance-id'
             # os.environ['SPANNER_DATABASE_ID'] = 'your-database-id'
             # os.environ['SPANNER_CREDENTIALS_PATH'] = '/path/to/service-account.json'
+            # os.environ['SPANNER_CREDENTIALS_JSON'] = '{"type": "google_ADC"}'
             # os.environ['SPANNER_GRAPH_NAME'] = 'graph'
             proxy.add_project()  # No parameters needed, all from environment variables
             
-        Example 4 (Future: Neo4j):
+        Example 5 (Future: Neo4j):
             proxy.add_project(
                 project_name="MyNeo4jProject",
                 database_type="neo4j",
@@ -126,9 +139,20 @@ class DatabaseProxy:
         project_id = project_id or os.getenv('SPANNER_PROJECT_ID')
         instance_id = instance_id or os.getenv('SPANNER_INSTANCE_ID')
         database_id = database_id or os.getenv('SPANNER_DATABASE_ID')
-        credentials = credentials or os.getenv('SPANNER_CREDENTIALS_PATH')
+        credentials = credentials or os.getenv('SPANNER_CREDENTIALS_PATH') 
         graph_name = graph_name or os.getenv('SPANNER_GRAPH_NAME')
         
+        # If still no credentials from file path, try JSON string from environment
+        if credentials is None:
+            credentials_json_str = os.getenv('SPANNER_CREDENTIALS_JSON')
+            if credentials_json_str:
+                try:
+                    # Convert JSON string to dict object
+                    credentials = json.loads(credentials_json_str)
+                except (TypeError, json.JSONDecodeError):
+                    # If parsing fails, keep as string for later processing
+                    credentials = credentials_json_str
+
         # Validate required parameters
         if not project_name:
             raise ValueError("project_name is required (either as parameter or PROJECT_NAME environment variable)")
@@ -177,37 +201,52 @@ class DatabaseProxy:
         if not all([project_id, instance_id, database_id, credentials]):
             raise ValueError("For Spanner projects, project_id, instance_id, database_id, and credentials are required")
         
-        # Determine if credentials is a file path or JSON string
+        # Determine if credentials is a file path, JSON string, or dict object
         service_account_data = None
         credentials_source = None
         
-        # Try to parse as JSON first
-        try:
-            service_account_data = json.loads(credentials)
-            credentials_source = "json_string"
-            print(f"✓ Using Service Account JSON string")
-        except json.JSONDecodeError:
-            # Not JSON, treat as file path
-            credentials_path = Path(credentials)
-            if not credentials_path.exists():
-                raise FileNotFoundError(f"Service account file not found: {credentials}")
-            
+        # Check if credentials is already a dict object
+        if isinstance(credentials, dict):
+            service_account_data = credentials
+            credentials_source = "dict_object"
+            print(f"✓ Using Service Account dict object")
+        else:
+            # Try to parse as JSON string first
             try:
-                with open(credentials_path, 'r') as f:
-                    service_account_data = json.load(f)
-                credentials_source = "file_path"
-                print(f"✓ Using Service Account file: {credentials_path.absolute()}")
-            except json.JSONDecodeError:
-                raise ValueError(f"Invalid JSON in service account file: {credentials}")
+                service_account_data = json.loads(credentials)
+                credentials_source = "json_string"
+                print(f"✓ Using Service Account JSON string")
+            except (json.JSONDecodeError, TypeError):
+                # Not JSON, treat as file path
+                credentials_path = Path(credentials)
+                if not credentials_path.exists():
+                    raise FileNotFoundError(f"Service account file not found: {credentials}")
+                
+                try:
+                    with open(credentials_path, 'r') as f:
+                        service_account_data = json.load(f)
+                    credentials_source = "file_path"
+                    print(f"✓ Using Service Account file: {credentials_path.absolute()}")
+                except json.JSONDecodeError:
+                    raise ValueError(f"Invalid JSON in service account file: {credentials}")
         
-        # Validate required fields
-        required_fields = ['type', 'project_id', 'private_key', 'client_email']
+        # Validate required fields based on credential type
+        if service_account_data.get('type') == 'google_ADC':
+            # ADC mode doesn't require private_key and client_email
+            required_fields = ['type']
+        else:
+            # Service account mode requires all fields
+            required_fields = ['type', 'project_id', 'private_key', 'client_email']
+        
         for field in required_fields:
             if field not in service_account_data:
                 raise ValueError(f"Missing required field in service account JSON: {field}")
         
         # Create OAuth config with service account data
         oauth_config = OAuthConfig(**service_account_data)
+        
+        # Determine auth_type based on credential type
+        credential_type = service_account_data.get('type', 'service_account') 
         
         # Create database configuration
         database_config = DatabaseConfig(
@@ -216,7 +255,7 @@ class DatabaseProxy:
             instance_id=instance_id,
             database_id=database_id,
             graph_name=graph_name,
-            auth_type=AuthType.SERVICE_ACCOUNT,
+            auth_type=credential_type,
             oauth_config=oauth_config,
             service_account_path=credentials if credentials_source == "file_path" else None
         )

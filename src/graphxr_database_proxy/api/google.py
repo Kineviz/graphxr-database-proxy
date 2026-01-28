@@ -41,12 +41,12 @@ def get_spanner_client(project_id, credentials):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create Spanner client: {e}")
 
-def get_google_credentials(auth_info):
+def get_google_credentials(auth_info, auth_type='service_account'):
     """
     Get Google credentials based on auth_info
     If contains 'token', use OAuth2, otherwise use service account
     """
-    if auth_info.get("token"):
+    if auth_type == 'oauth2' and auth_info.get("token"):
         credentials = google.oauth2.credentials.Credentials(
             token=auth_info.get("token"),
             token_uri="https://oauth2.googleapis.com/token",
@@ -62,6 +62,17 @@ def get_google_credentials(auth_info):
                 
         )
         return credentials, None
+    if auth_type == 'google_ADC':
+        # Application Default Credentials
+        credentials, project = google.auth.default(
+            scopes=[
+                "https://www.googleapis.com/auth/spanner.admin",
+                "https://www.googleapis.com/auth/spanner.data",
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/userinfo.email",
+                ]
+        )
+        return credentials, project
     else:
         # Service Account method
         if auth_info:
@@ -81,19 +92,20 @@ async def list_google_projects(request: Request):
         # Get authentication info from request body json
         body = await request.json()
         auth = body.get('auth', {})
+        auth_type = body.get('auth_type', 'service_account')
 
         default_oauth = get_default_oauth_config()
         if default_oauth is None:
             default_oauth = {}  # Use empty dict if config file doesn't exist
         newAuth = { **default_oauth, **auth }
 
-        credentials, project_id = get_google_credentials(newAuth)
+        credentials, project_id = get_google_credentials(newAuth, auth_type)
 
         is_service_account = credentials and isinstance(credentials, service_account.Credentials)
         # Use Resource Manager API to list projects
         projects = []
 
-        if is_service_account and project_id:
+        if (is_service_account or auth_type == 'google_ADC') and project_id:
             projects.append(GoogleProject(
                 name=project_id,
                 id=project_id,
@@ -158,12 +170,13 @@ async def list_google_databases(
     try:
         auth =  request_data.get('auth', {})
         project_id = auth.get('project_id')
+        auth_type = request_data.get('auth_type', 'service_account')
         instance_id = auth.get('instance_id')
         default_oauth = get_default_oauth_config()
         if default_oauth is None:
             default_oauth = {}  # Use empty dict if config file doesn't exist
         newAuth = { **default_oauth, **auth }
-        credentials, _ = get_google_credentials(newAuth)
+        credentials, project_id = get_google_credentials(newAuth, auth_type)
 
         if not project_id:
             raise HTTPException(status_code=400, detail="Project ID not found")

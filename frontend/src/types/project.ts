@@ -1,6 +1,6 @@
 export type DatabaseType = 'spanner' | 'postgresql' | 'mysql' | 'mongodb';
 
-export type AuthType = 'oauth2' | 'service_account' | 'username_password';
+export type AuthType = 'oauth2' | 'service_account' | 'google_ADC' | 'username_password';
 
 export interface OAuthConfig {
   client_id: string;

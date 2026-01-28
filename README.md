@@ -71,7 +71,7 @@ graphxr-proxy --ui
 ```
 > Open http://localhost:9080/admin for configuration
 
-**Option 2: Python Code**
+**Option 2: Python Code with Service Account JSON**
 ```python
 from graphxr_database_proxy import DatabaseProxy
 
@@ -92,6 +92,34 @@ project_id = proxy.add_project(
     instance_id="spanner-instance-id",
     database_id="spanner-database-id",
     credentials=service_account_json,  
+    graph_name="graph_name"  # Optional
+)
+
+proxy.start(
+    host="0.0.0.0",     
+    port=9080,          
+    show_apis=True     
+)
+```
+
+**Option 3: Python Code with Google Cloud ADC**
+> Your should have set up Google Application Default Credentials (ADC) on the machine running the proxy. See [Google Cloud ADC Documentation](https://cloud.google.com/docs/authentication/production#automatically).
+
+```python
+from graphxr_database_proxy import DatabaseProxy
+proxy = DatabaseProxy()
+
+google_adc_credentials={
+    "type": "google_ADC"
+},  
+ 
+project_id = proxy.add_project(
+    project_name="project_name",
+    database_type="spanner",
+    project_id="gcp-project-id", 
+    instance_id="spanner-instance-id",
+    database_id="spanner-database-id",
+    credentials=google_adc_credentials,  
     graph_name="graph_name"  # Optional
 )
 

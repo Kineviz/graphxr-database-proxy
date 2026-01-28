@@ -23,7 +23,7 @@ from ..models.project import (
     SchemaResponse, GraphSchemaResponse, SampleDataResponse, AuthType, 
     Category, Relationship, GraphData, Node, RelationshipData
 )
-from ..common.util import get_default_oauth_config
+from ..common.util import get_default_oauth_config, exists_oauth_config
 from ..services.project_service import ProjectService
 
 import json
@@ -50,6 +50,9 @@ class SpannerDriver(BaseDatabaseDriver):
             elif self.config.auth_type == AuthType.SERVICE_ACCOUNT:
                 print("[INFO] Using Service Account authentication")
                 self.client = await self._get_service_account_client()
+            elif self.config.auth_type == AuthType.GOOGLE_ADC:
+                print("[INFO] Using Google Application Default Credentials (ADC) authentication")
+                self.client = await self._get_adc_client()
             else:
                 raise ValueError(f"Unsupported auth type: {self.config.auth_type}")
             
@@ -126,7 +129,7 @@ class SpannerDriver(BaseDatabaseDriver):
 
     async def _get_oauth_client(self) -> Client:
         """Get Spanner client using OAuth2"""
-        if not self.config.oauth_config:
+        if not self.config.oauth_config or exists_oauth_config() is False:
             raise ValueError("OAuth config is required for OAuth2 authentication")
         
         if not self.config.oauth_config.client_id or not self.config.oauth_config.client_secret:
@@ -223,6 +226,17 @@ class SpannerDriver(BaseDatabaseDriver):
         
         return spanner.Client(project=self.config.project_id, credentials=credentials)
     
+    async def _get_adc_client(self) -> Client:
+        """Get Spanner client using Application Default Credentials (ADC)"""
+        # Use default ADC credentials
+        credentials, project_id = google.auth.default(
+            scopes=[
+                "https://www.googleapis.com/auth/spanner.admin", 
+                "https://www.googleapis.com/auth/spanner.data"
+            ]
+        )
+        return spanner.Client(project=self.config.project_id, credentials=credentials)
+
     async def disconnect(self) -> None:
         """Close connection to Spanner"""
         # Spanner client doesn't need explicit disconnection

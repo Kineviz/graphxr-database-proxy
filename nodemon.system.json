@@ -1,0 +1,26 @@
+{
+  "watch": [
+    "src/",
+    "config/",
+    "pyproject.toml",
+    "requirements.txt"
+  ],
+  "ext": "py,json,toml,txt",
+  "ignore": [
+    "*.pyc",
+    "__pycache__/",
+    ".git/",
+    ".venv/",
+    "frontend/",
+    "*.log",
+    "*.tmp"
+  ],
+  "exec": "python.exe -m uvicorn src.graphxr_database_proxy.main:app --host 0.0.0.0 --port 9080",
+  "env": {
+    "PYTHONPATH": ".",
+    "PYTHONUNBUFFERED": "1"
+  },
+  "delay": 1000,
+  "verbose": true,
+  "restartable": "rs"
+}

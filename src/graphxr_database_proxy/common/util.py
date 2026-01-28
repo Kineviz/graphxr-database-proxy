@@ -21,6 +21,11 @@ def read_json_file(file_path):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading config file: {e}")
     
+def exists_oauth_config() -> bool:
+    """Check if default OAuth config file exists"""
+    config_path = os.path.join(project_root, 'config', 'default.google.localhost.oauth.json')
+    return os.path.exists(config_path)
+    
 def get_default_oauth_config() -> dict:
     """Get default OAuth config from config/default.google.localhost.oauth.json"""
     try:

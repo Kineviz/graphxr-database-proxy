@@ -12,8 +12,9 @@ import {
   Upload,
   message,
   Alert,
+  Spin
 } from "antd";
-import { UploadOutlined, ClockCircleOutlined } from "@ant-design/icons";
+import { UploadOutlined, ClockCircleOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import type { UploadProps } from "antd";
 import {
   DatabaseType,
@@ -26,6 +27,7 @@ const { Option } = Select;
 
 interface ProjectFormProps {
   initialValues?: Project | null;
+  open: boolean;
   onSubmit: (values: ProjectCreate) => void;
   onCancel: () => void;
 }
@@ -38,6 +40,7 @@ const DefaultAuthType = window.location.origin === "http://localhost:9080" ? "oa
 
 const ProjectForm: React.FC<ProjectFormProps> = ({
   initialValues,
+  open,
   onSubmit,
   onCancel,
 }) => {
@@ -58,6 +61,20 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
     Array<{ id: string; name: string; graphDBs?: Array<{ id: string; name: string }> }>
   >([]);
 
+  const cleanupForm = () => {
+     form && form.resetFields();
+       setServiceAccountKey({});
+       setDatabaseType("spanner");
+       setAuthType(DefaultAuthType);
+       setLoading({ listProjects: false, listDatabases: false });
+       setProjectsList([]);
+       setDatabases([]);
+  }
+  useEffect(() => {
+    if(!open) {
+      cleanupForm();
+    }
+   }, [open]);
   useEffect(() => {
     if (initialValues) {
       form.setFieldsValue({
@@ -70,8 +87,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       updateServiceAccountKey({
         ...initialValues.database_config.oauth_config,
       });
+    } else {
+      cleanupForm();
     }
-  }, [initialValues, form]);
+  }, [initialValues]);
 
   const handleSubmit = (values: any) => {
     const { name, database_type, ...dbConfigFields } = values;
@@ -103,6 +122,12 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         databaseConfig.project_id = serviceAccountKey?.project_id;
         databaseConfig.oauth_config = {
           ...serviceAccountKey,
+        };
+      } else if (authType === "google_ADC") {
+        // ADC 模式不需要额外的配置
+        databaseConfig.oauth_config = {
+          ...serviceAccountKey,
+          google_ADC: true,
         };
       }
 
@@ -192,13 +217,22 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         },
         body: JSON.stringify({
           auth: serviceAccountKey,
+          auth_type: authType,
         }),
       });
       if (response.ok) {
         const projects = await response.json();
-        setProjectsList(projects);
+        setProjectsList(Array.isArray(projects) ? projects : []);
+        updateServiceAccountKey({
+          ...serviceAccountKey,
+          project_id: projects.length > 0 ? projects[0].id : "",
+        });
       } else {
-        message.error("Failed to fetch projects");
+        if(authType === "google_ADC") {
+          message.error("Failed to fetch projects. Please ensure that Application Default Credentials are properly configured in your environment.");
+        } else {
+          message.error("Failed to fetch projects");
+        }
       }
       setLoading({ listDatabases: false, listProjects: false });
     } catch (error) {
@@ -216,6 +250,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         },
         body: JSON.stringify({
           auth: serviceAccountKey,
+          auth_type: authType,
         }),
       });
       if (response.ok) {
@@ -236,9 +271,12 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 
     const isNewOauth2 = serviceAccountKey && serviceAccountKey?.token && authType == "oauth2";
     const isNewServiceAccount = serviceAccountKey && serviceAccountKey?.type === "service_account"   && serviceAccountKey.private_key_id;
+    const isADC = authType === "google_ADC";
+    
     if (
       isNewOauth2 ||
-      isNewServiceAccount
+      isNewServiceAccount ||
+      isADC
     ) {
       getProjectsList();
     }
@@ -297,7 +335,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
       }
     };
 
-    const checkGoogleLoginDataWrited = () => {
+    const checkGoogleLoginDataWrite = () => {
       // Check if the data has been written to localStorage
       const token = localStorage.getItem("g_auth_token");
       const state = localStorage.getItem("g_auth_state");
@@ -311,7 +349,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 
     // Listen for popup to close
     const timer = setInterval(() => {
-      if (checkGoogleLoginDataWrited()) {
+      if (checkGoogleLoginDataWrite()) {
         try {
           clearInterval(timer);
           popup?.close();
@@ -343,6 +381,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
 
   const isServiceAccount = serviceAccountKey && serviceAccountKey?.type === "service_account" && serviceAccountKey.private_key_id;
   const isGoogleOauth2 = serviceAccountKey && serviceAccountKey?.token && authType == "oauth2";
+  const isADC = authType === "google_ADC";
 
   return (
     <Form
@@ -399,9 +438,10 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             <Select
               placeholder="Select authentication type"
               onChange={handleAuthTypeChange}
-            >
-              <Option value="oauth2">OAuth2</Option>
+          >
               <Option value="service_account">Service Account</Option>
+              <Option value="google_ADC">Application Default Credentials (ADC)</Option>
+              <Option value="oauth2">OAuth2</Option>
               {/* <Option value="username_password">Username/Password</Option> */}
             </Select>
           </Form.Item>
@@ -536,10 +576,62 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             </Card>
           )}
 
+          {authType === "google_ADC" && (
+            <Card
+              title="Application Default Credentials (ADC)"
+              size="small"
+              type="inner"
+            >
+              {!loading.listProjects && !loading.listDatabases && projectsList.length === 0 ? (
+                <Alert
+                  message="ADC Mode Not Supported"
+                  description={
+                    <div>
+                      <p>Unable to use Application Default Credentials.</p>
+                      <p style={{ marginTop: 8, marginBottom: 8 }}>
+                        This could be because:
+                      </p>
+                      <ul style={{ marginBottom: 8, paddingLeft: 20 }}>
+                        <li>ADC is not properly configured in your environment</li>
+                        <li>The service account lacks necessary permissions</li>
+                        <li>The backend server doesn't support ADC mode</li>
+                      </ul>
+                      <p style={{ marginTop: 8, marginBottom: 0 }}>
+                        Please use <strong>Service Account</strong> authentication instead.
+                      </p>
+                    </div>
+                  }
+                  type="error"
+                  showIcon
+                />
+              ) : (
+                <Alert
+                  message="Using Application Default Credentials"
+                  icon={ (loading.listProjects || loading.listDatabases) ? <Spin /> : <InfoCircleOutlined /> }
+                  description={
+                    <div>
+                      <p> ADC will automatically use credentials from:</p>
+                      <ul style={{ marginBottom: 0, paddingLeft: 20 }}>
+                        <li>GOOGLE_APPLICATION_CREDENTIALS environment variable</li>
+                        <li>gcloud CLI default credentials</li>
+                        <li>Compute Engine/GKE service account (if running on GCP)</li>
+                      </ul>
+                      <p style={{ marginTop: 8, marginBottom: 0 }}>
+                        Make sure your environment is properly configured with GCP credentials.
+                      </p>
+                    </div>
+                  }
+                  type="info"
+                  showIcon
+                />
+              )}
+            </Card>
+          )}
+
           <Row gutter={16} style={{ marginTop: 16 }}>
             <Col span={12}>
               <Form.Item
-                label="Project ID"
+                label={ <> <span>Project ID </span>  {loading.listProjects &&  <Spin style={{marginLeft:5}} size="small" />} </> }
                 name="project_id"
                 rules={[{ required: true, message: "Please select a project" }]}
               >
@@ -579,90 +671,161 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
             </Col>
             <Col span={12}>
               <Form.Item
-                label="Instance ID"
+                label={ <> <span>Instance ID </span>  {loading.listProjects &&   <Spin style={{marginLeft:5}} size="small" />} </> }
                 name="instance_id"
                 rules={[
-                  { required: true, message: "Please select an instance" },
+                  { required: true, message: isADC ? "Please enter or select an instance ID" : "Please select an instance" },
                 ]}
               >
-                <Select style={{ width: "100%" }} showSearch
-                  filterOption={(input, option) =>
-                    String(option?.children)?.toLowerCase().includes(input.toLowerCase())
+                {(() => {
+                  const instances = projectsList.find((p) => p.id === serviceAccountKey?.project_id)?.instances || [];
+                  const hasInstances = instances.length > 0;
+                  
+                  if (isADC && !hasInstances) {
+                    return (
+                      <Input 
+                        placeholder="Enter instance ID manually"
+                        onChange={(e) => {
+                          updateServiceAccountKey({
+                            ...serviceAccountKey,
+                            instance_id: e.target.value,
+                            database_id: null,
+                            graph_name: null,
+                          });
+                        }}
+                      />
+                    );
                   }
-                  onChange={(value) => {
-                    updateServiceAccountKey({
-                      ...serviceAccountKey,
-                      instance_id: value,
-                      database_id: null,
-                      graph_name: null,
-                    });
-                  }}
-                >
-                  {projectsList.find((p) => p.id === serviceAccountKey?.project_id)?.instances.map((inst) => (
-                     <Option key={inst.id} value={inst.id}>
-                      {inst.name || inst.id}
-                    </Option>
-                  ))}
-                </Select>
+                  
+                  return (
+                    <Select 
+                      style={{ width: "100%" }} 
+                      showSearch
+                      filterOption={(input, option) =>
+                        String(option?.children)?.toLowerCase().includes(input.toLowerCase())
+                      }
+                      onChange={(value) => {
+                        updateServiceAccountKey({
+                          ...serviceAccountKey,
+                          instance_id: value,
+                          database_id: null,
+                          graph_name: null,
+                        });
+                      }}
+                    >
+                      {instances.map((inst) => (
+                        <Option key={inst.id} value={inst.id}>
+                          {inst.name || inst.id}
+                        </Option>
+                      ))}
+                    </Select>
+                  );
+                })()}
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16} style={{ marginTop: 16 }}>
             <Col span={12}>
               <Form.Item
-                label="Database ID"
+                label= { <> <span>Database ID </span>  {loading.listDatabases &&  <Spin style={{marginLeft:5}} size="small" />} </> }
                 name="database_id"
                 rules={[
-                  { required: true, message: "Please select a database" },
+                  { required: true, message: isADC ? "Please enter or select a database ID" : "Please select a database" },
                 ]}
               >
-                <Select style={{ width: "100%" }} showSearch
-                  onChange={(value) => {
-                    updateServiceAccountKey({
-                      ...serviceAccountKey,
-                      database_id: value,
-                      graph_name: null,
-                    });
-                  }}
-                  filterOption={(input, option) =>
-                    String(option?.children)?.toLowerCase().includes(input.toLowerCase())
+                {(() => {
+                  const hasDatabases = databases.length > 0;
+                  
+                  if (isADC && !hasDatabases && !loading.listDatabases) {
+                    return (
+                      <Input 
+                        placeholder="Enter database ID manually"
+                        onChange={(e) => {
+                          updateServiceAccountKey({
+                            ...serviceAccountKey,
+                            database_id: e.target.value,
+                            graph_name: null,
+                          });
+                        }}
+                      />
+                    );
                   }
-                  loading={loading.listDatabases}
-                  placeholder={loading.listDatabases ? "Loading databases..." : "Select a database"}
-                  notFoundContent={loading.listDatabases ? "Loading databases..." : "No databases found"}
-                >
-                  { databases.map((db) => (
-                    <Option key={db.id} value={db.id}>
-                      {db.name || db.id}
-                    </Option>
-                  ))}
-                </Select>
+                  
+                  return (
+                    <Select 
+                      style={{ width: "100%" }} 
+                      showSearch
+                      onChange={(value) => {
+                        updateServiceAccountKey({
+                          ...serviceAccountKey,
+                          database_id: value,
+                          graph_name: null,
+                        });
+                      }}
+                      filterOption={(input, option) =>
+                        String(option?.children)?.toLowerCase().includes(input.toLowerCase())
+                      }
+                      loading={loading.listDatabases}
+                      placeholder={loading.listDatabases ? "Loading databases..." : "Select a database"}
+                      notFoundContent={loading.listDatabases ? "Loading databases..." : "No databases found"}
+                    >
+                      {databases.map((db) => (
+                        <Option key={db.id} value={db.id}>
+                          {db.name || db.id}
+                        </Option>
+                      ))}
+                    </Select>
+                  );
+                })()}
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                label="Property Graph"
+                label={ <> <span>Property Graph </span>  {loading.listDatabases &&  <Spin style={{marginLeft:5}} size="small" />} </> }
                 name="graph_name"
                 rules={[{ required: false }]}
               >
-                <Select style={{ width: "100%" }} showSearch
-                  onChange={(value) => {
-                    updateServiceAccountKey({
-                      ...serviceAccountKey,
-                      graph_name: value,
-                    });
-                  }}
-                  filterOption={(input, option) =>
-                    String(option?.children)?.toLowerCase().includes(input.toLowerCase())
+                {(() => {
+                  const graphDBs = databases.find((db) => db.id === form.getFieldValue("database_id"))?.graphDBs || [];
+                  const hasGraphDBs = graphDBs.length > 0;
+                  
+                  if (isADC && !hasGraphDBs && !loading.listDatabases) {
+                    return (
+                      <Input 
+                        placeholder="Enter property graph name (optional)"
+                        onChange={(e) => {
+                          updateServiceAccountKey({
+                            ...serviceAccountKey,
+                            graph_name: e.target.value,
+                          });
+                        }}
+                      />
+                    );
                   }
-                >
-                  { databases.find((db) => db.id === form.getFieldValue("database_id"))?.graphDBs?.map((graphDB) => (
-                    <Option key={graphDB.id} value={graphDB.id}>
-                      {graphDB.name || graphDB.id}
-                    </Option>
-                  ))}
-                  <Option value={""}>No Property Graph</Option>
-                </Select>
+                  
+                  return (
+                    <Select 
+                      style={{ width: "100%" }} 
+                      showSearch
+                      onChange={(value) => {
+                        updateServiceAccountKey({
+                          ...serviceAccountKey,
+                          graph_name: value,
+                        });
+                      }}
+                      filterOption={(input, option) =>
+                        String(option?.children)?.toLowerCase().includes(input.toLowerCase())
+                      }
+                    >
+                      {graphDBs.map((graphDB) => (
+                        <Option key={graphDB.id} value={graphDB.id}>
+                          {graphDB.name || graphDB.id}
+                        </Option>
+                      ))}
+                      <Option value={""}>No Property Graph</Option>
+                    </Select>
+                  );
+                })()}
               </Form.Item>
             </Col>
           </Row>

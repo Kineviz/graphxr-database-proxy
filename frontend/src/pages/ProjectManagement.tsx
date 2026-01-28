@@ -260,6 +260,7 @@ const ProjectManagement: React.FC = () => {
         width={800}
       >
         <ProjectForm
+          open={createModalVisible}
           onSubmit={handleCreateSubmit}
           onCancel={handleModalCancel}
         />
@@ -275,6 +276,7 @@ const ProjectManagement: React.FC = () => {
       >
         <ProjectForm
           initialValues={selectedProject}
+          open={editModalVisible}
           onSubmit={handleEditSubmit}
           onCancel={handleModalCancel}
         />

@@ -53,20 +53,19 @@ graphxr-proxy --ui
 
 ## 📚 Python 使用指南
 
-### DatabaseProxy 类方法
+**方式 1：Web UI（推荐）**
+```bash
+graphxr-proxy --ui
+```
+> 打开 http://localhost:9080/admin 进行配置
 
+**方式 2：使用服务账号 JSON 的 Python 代码**
 ```python
 from graphxr_database_proxy import DatabaseProxy
 
 proxy = DatabaseProxy()
 
-```
-#### `add_project()` (推荐) 
-
-```python
-# 使用 JSON 字符串
-service_account_json = 
-{
+service_account_json = {
     "type": "service_account",
     "project_id": "your-gcp-project-id",
     "private_key": "-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n",
@@ -75,64 +74,48 @@ service_account_json =
 }
 
 project_id = proxy.add_project(
-    project_name="项目名称",
+    project_name="project_name",
     database_type="spanner",
     project_id="gcp-project-id", 
     instance_id="spanner-instance-id",
     database_id="spanner-database-id",
-    credentials=service_account_json,  # JSON 字符串
-    graph_name="图名称"  # 可选
+    credentials=service_account_json,  
+    graph_name="graph_name"  # 可选
 )
-```
 
-
-#### `get_project_apis()` (增强版)
-```python
-# 获取所有项目的 API 端点
-all_apis = proxy.get_project_apis()
-
-# 通过项目名称获取特定项目的 API 端点 (新功能)
-project_apis = proxy.get_project_apis("项目名称")
-# 错误处理
-result = proxy.get_project_apis("不存在的项目")
-if "error" in result:
-    print(f"项目未找到: {result['error']}")
-else:
-    print(f"找到项目: {result['name']}")
-```
-
-#### `start()`
-```python
 proxy.start(
-    host="0.0.0.0",      # 绑定主机
-    port=3002,           # 绑定端口
-    dev=False,           # 开发模式（热重载）
-    show_apis=True       # 显示 API 端点信息
+    host="0.0.0.0",     
+    port=9080,          
+    show_apis=True     
 )
 ```
 
-### 示例文件
-
-- `examples/quick_start.py` - 快速启动示例
-- `examples/service-account-example.json` - Service Account JSON 文件模板
-
-### 环境变量支持
-
-支持以下环境变量来配置默认值：
-
-| 环境变量 | 说明 | 示例 |
-|----------|------|------|
-| `PROJECT_NAME` | 默认项目名称 | `MySpannerProject` |
-| `SPANNER_PROJECT_ID` | 默认 GCP 项目 ID | `your-gcp-project-id` |
-| `SPANNER_INSTANCE_ID` | 默认 Spanner 实例 ID | `your-spanner-instance-id` |
-| `SPANNER_DATABASE_ID` | 默认 Spanner 数据库 ID | `your-database-id` |
-| `SPANNER_CREDENTIALS_PATH` | 默认服务账户 JSON 路径 | `./service-account.json` |
-| `SPANNER_GRAPH_NAME` | 默认图名称 | `my_graph` |
+**方式 3：使用 Google Cloud ADC 的 Python 代码**
+> 您需要在运行代理的机器上设置 Google Application Default Credentials (ADC)。请参阅 [Google Cloud ADC 文档](https://cloud.google.com/docs/authentication/production#automatically)。
 
 ```python
-# 使用环境变量，无需任何参数
+from graphxr_database_proxy import DatabaseProxy
 proxy = DatabaseProxy()
-project_id = proxy.add_project()
+
+google_adc_credentials={
+    "type": "google_ADC"
+},  
+ 
+project_id = proxy.add_project(
+    project_name="project_name",
+    database_type="spanner",
+    project_id="gcp-project-id", 
+    instance_id="spanner-instance-id",
+    database_id="spanner-database-id",
+    credentials=google_adc_credentials,  
+    graph_name="graph_name"  # 可选
+)
+
+proxy.start(
+    host="0.0.0.0",     
+    port=9080,          
+    show_apis=True     
+)
 ```
 
 ## 🐳 Docker
