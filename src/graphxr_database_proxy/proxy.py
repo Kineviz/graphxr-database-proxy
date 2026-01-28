@@ -188,15 +188,15 @@ class DatabaseProxy:
             print(f"✓ Using Service Account JSON string")
         except json.JSONDecodeError:
             # Not JSON, treat as file path
-            creds_path = Path(credentials)
-            if not creds_path.exists():
+            credentials_path = Path(credentials)
+            if not credentials_path.exists():
                 raise FileNotFoundError(f"Service account file not found: {credentials}")
             
             try:
-                with open(creds_path, 'r') as f:
+                with open(credentials_path, 'r') as f:
                     service_account_data = json.load(f)
                 credentials_source = "file_path"
-                print(f"✓ Using Service Account file: {creds_path.absolute()}")
+                print(f"✓ Using Service Account file: {credentials_path.absolute()}")
             except json.JSONDecodeError:
                 raise ValueError(f"Invalid JSON in service account file: {credentials}")
         
@@ -423,6 +423,7 @@ class DatabaseProxy:
                 "endpoints": {
                     "base": f"/api/projects/{project_id}",
                     "query": f"/api/projects/{project_id}/query",
+                    "graphSchema": f"/api/projects/{project_id}/graphSchema",
                     "schema": f"/api/projects/{project_id}/schema",
                     "health": f"/api/projects/{project_id}/health"
                 }
@@ -436,6 +437,7 @@ class DatabaseProxy:
                         "endpoints": {
                             "base": f"/api/projects/{pid}",
                             "query": f"/api/projects/{pid}/query", 
+                            "graphSchema": f"/api/projects/{pid}/graphSchema",
                             "schema": f"/api/projects/{pid}/schema",
                             "health": f"/api/projects/{pid}/health"
                         }

@@ -2,12 +2,26 @@
 
 > **Language**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.zh.md)
 
+
+## Prerequisites
+
+- **Node.js** >= 22.x — [Download](https://nodejs.org/en/download/)
+- **Python** >= 3.9.x — [Download](https://www.python.org/downloads/)
+- **uv** >= 0.9.x — [Installation Guide](https://docs.astral.sh/uv/)
+
+
 ## 🚀 Quick Start
 
 ### One-Click Development Environment
+
 ```bash
+git clone https://github.com/Kineviz/graphxr-database-proxy.git
+cd graphxr-database-proxy
+uv venv
+uv pip install -r requirements.txt
 npm run dev            # Start both frontend and backend (recommended)
-```
+``` 
+
 This command will start:
 - **Backend Server** (Python FastAPI): http://localhost:9080
 - **Frontend Development Server** (React): http://localhost:3002

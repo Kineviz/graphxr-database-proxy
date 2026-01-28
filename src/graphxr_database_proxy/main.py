@@ -4,6 +4,18 @@ Main FastAPI application
 """
 
 import os
+
+# Completely disable OpenTelemetry SDK to prevent metrics export errors
+# Must be set BEFORE importing any Google Cloud libraries
+os.environ["OTEL_SDK_DISABLED"] = "true"
+os.environ["OTEL_METRICS_EXPORTER"] = "none"
+os.environ["OTEL_TRACES_EXPORTER"] = "none"
+os.environ["OTEL_LOGS_EXPORTER"] = "none"
+os.environ["SPANNER_ENABLE_BUILT_IN_METRICS"] = "false"
+os.environ["SPANNER_ENABLE_EXTENDED_TRACING"] = "false" 
+os.environ["SPANNER_ENABLE_METRICS"] = "false"
+os.environ["GOOGLE_CLOUD_DISABLE_METRICS"] = "true"
+
 import uvicorn
 from pathlib import Path
 from fastapi import FastAPI

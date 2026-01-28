@@ -1,6 +1,6 @@
 {
   "name": "graphxr-database-proxy",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "GraphXR Database Proxy - Secure middleware for connecting GraphXR to databases",
   "main": "src/graphxr_database_proxy/main.py",
   "scripts": {
@@ -18,7 +18,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "webpack": "^5.88.2"
   },
   "keywords": [
     "graphxr",

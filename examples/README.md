@@ -280,6 +280,7 @@ else:
         "base": "/api/projects/abc123-def456-ghi789",
         "query": "/api/projects/abc123-def456-ghi789/query",
         "schema": "/api/projects/abc123-def456-ghi789/schema",
+        "graphSchema": "/api/projects/abc123-def456-ghi789/graphSchema",
         "health": "/api/projects/abc123-def456-ghi789/health"
     }
 }

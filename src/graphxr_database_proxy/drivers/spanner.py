@@ -4,6 +4,7 @@ Google Cloud Spanner driver
 """
 
 from hashlib import new
+import os
 import time
 from typing import Any, Dict, List, Optional
 
@@ -17,7 +18,11 @@ import google.oauth2.credentials
 import re
 
 from .base import BaseDatabaseDriver
-from ..models.project import Project, GraphSchema, GraphSchemaMap, QueryData, QueryResponse, SchemaResponse, GraphSchemaResponse, SampleDataResponse, AuthType, Category, Relationship
+from ..models.project import (
+    Project, GraphSchema, GraphSchemaMap, QueryData, QueryResponse, 
+    SchemaResponse, GraphSchemaResponse, SampleDataResponse, AuthType, 
+    Category, Relationship, GraphData, Node, RelationshipData
+)
 from ..common.util import get_default_oauth_config
 from ..services.project_service import ProjectService
 
@@ -326,10 +331,10 @@ class SpannerDriver(BaseDatabaseDriver):
             if not results:
                 return QueryData(
                     type="GRAPH",
-                    data={
-                        "nodes": [],
-                        "relationships": []
-                    }
+                    data=GraphData(
+                        nodes=[],
+                        relationships=[]
+                    )
                 )
             
             for row in results:
@@ -371,26 +376,26 @@ class SpannerDriver(BaseDatabaseDriver):
                         del properties["properties"]
 
                     if node_or_edge.get("kind") == "node":
-                        graph["nodes"][node_or_edge.get("identifier")] = {
-                            "id": node_or_edge.get("identifier"),
-                            "labels": [last_label] if last_label else [],
-                            "properties": properties
-                        }
+                        graph["nodes"][node_or_edge.get("identifier")] = Node(
+                            id=node_or_edge.get("identifier"),
+                            labels=[last_label] if last_label else [],
+                            properties=properties
+                        )
                     elif node_or_edge.get("kind") == "edge":
-                        graph["relationships"][node_or_edge.get("identifier")] = {
-                            "id": node_or_edge.get("identifier"),
-                            "type": last_label,
-                            "startNodeId": node_or_edge.get("source_node_identifier"),
-                            "endNodeId": node_or_edge.get("destination_node_identifier"),
-                            "properties": properties
-                        }
+                        graph["relationships"][node_or_edge.get("identifier")] = RelationshipData(
+                            id=node_or_edge.get("identifier"),
+                            type=last_label,
+                            startNodeId=node_or_edge.get("source_node_identifier"),
+                            endNodeId=node_or_edge.get("destination_node_identifier"),
+                            properties=properties
+                        )
             
             return QueryData(
                 type="GRAPH",
-                data={
-                    "nodes": list(graph["nodes"].values()),
-                    "relationships": list(graph["relationships"].values())
-                }
+                data=GraphData(
+                    nodes=list(graph["nodes"].values()),
+                    relationships=list(graph["relationships"].values())
+                )
             )
 
     def _execute_sql_query(self, query: str, parameters: Dict[str, Any] = None) -> QueryData:

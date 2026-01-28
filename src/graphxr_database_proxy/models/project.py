@@ -1,15 +1,22 @@
 """
 Data models for the GraphXR Database Proxy
+
+These models define the structure of requests and responses for the API,
+as documented in doc/API_Reference.md
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, Dict, List, Optional, Literal, Union
 from pydantic import BaseModel, Field
 from enum import Enum
 
 
 class DatabaseType(str, Enum):
-    """Supported database types"""
+    """
+    Supported database types
+    
+    Values match the API endpoint paths (e.g., /api/spanner/{project_id})
+    """
     SPANNER = "spanner"
     POSTGRESQL = "postgresql"
     MYSQL = "mysql"
@@ -17,7 +24,13 @@ class DatabaseType(str, Enum):
 
 
 class AuthType(str, Enum):
-    """Authentication types"""
+    """
+    Authentication types supported by the proxy
+    
+    - OAUTH2: OAuth 2.0 token-based authentication
+    - SERVICE_ACCOUNT: Google Cloud service account JSON key
+    - USERNAME_PASSWORD: Traditional username/password authentication
+    """
     OAUTH2 = "oauth2"
     SERVICE_ACCOUNT = "service_account"
     USERNAME_PASSWORD = "username_password"
@@ -104,74 +117,369 @@ class ProjectUpdate(BaseModel):
 
 
 class APIInfo(BaseModel):
-    """Database API information"""
-    type: DatabaseType
-    api_urls: Dict[str, str]
-    version: Optional[str] = None
+    """
+    Database API information response
+    
+    Returns metadata about available API endpoints for a project.
+    Corresponds to: GET /api/{database_type}/{project_id}
+    
+    Example:
+        {
+            "type": "spanner",
+            "api_urls": {
+                "info": "/api/spanner/my_project",
+                "query": "/api/spanner/my_project/query",
+                "graphSchema": "/api/spanner/my_project/graphSchema",
+                "schema": "/api/spanner/my_project/schema"
+            },
+            "version": "1.0"
+        }
+    """
+    type: DatabaseType = Field(..., description="Database type identifier")
+    api_urls: Dict[str, str] = Field(..., description="Map of endpoint names to URLs")
+    version: Optional[str] = Field(None, description="API version string")
 
 
 class QueryRequest(BaseModel):
-    """Database query request"""
-    query: str = Field(..., description="Query string")
-    parameters: Dict[str, Any] = Field(default_factory=dict, description="Query parameters")
+    """
+    Database query request
+    
+    Request body for: POST /api/{database_type}/{project_id}/query
+    
+    Attributes:
+        query: Cypher query string for graph databases
+        parameters: Optional query parameters for parameterized queries
+    
+    Example:
+        {
+            "query": "MATCH (n)-[r]->(m) RETURN * LIMIT 1",
+            "parameters": {}
+        }
+    """
+    query: str = Field(..., description="Query string (Cypher for Spanner Graph)")
+    parameters: Dict[str, Any] = Field(
+        default_factory=dict, 
+        description="Query parameters for parameterized queries"
+    )
+
+
+class Node(BaseModel):
+    """
+    Graph node/vertex representation
+    
+    Represents a single node in a graph query result.
+    
+    Attributes:
+        id: Unique base64-encoded compound key identifier
+        labels: List of node categories/labels
+        properties: Node property key-value pairs
+    """
+    id: str = Field(..., description="Unique node identifier (base64-encoded)")
+    labels: List[str] = Field(..., description="Node labels/categories")
+    properties: Dict[str, Any] = Field(..., description="Node properties")
+
+
+class RelationshipData(BaseModel):
+    """
+    Graph relationship/edge representation
+    
+    Represents a single relationship in a graph query result.
+    
+    Attributes:
+        id: Unique base64-encoded compound key identifier
+        type: Relationship type/name
+        startNodeId: Source node identifier
+        endNodeId: Target node identifier
+        properties: Relationship property key-value pairs
+    """
+    id: str = Field(..., description="Unique relationship identifier (base64-encoded)")
+    type: str = Field(..., description="Relationship type/name")
+    startNodeId: str = Field(..., description="Source node ID")
+    endNodeId: str = Field(..., description="Target node ID")
+    properties: Dict[str, Any] = Field(default_factory=dict, description="Relationship properties")
+
+
+class GraphData(BaseModel):
+    """
+    Graph query result data
+    
+    Contains nodes and relationships returned by a graph query.
+    Used when QueryData.type is "GRAPH".
+    """
+    nodes: List[Node] = Field(default_factory=list, description="Array of graph nodes")
+    relationships: List[RelationshipData] = Field(
+        default_factory=list, 
+        description="Array of graph relationships"
+    )
+
+
+class QueryData(BaseModel):
+    """
+    Query result data structure
+    
+    Container for query results, supporting both table and graph formats.
+    
+    Attributes:
+        type: Result format - "TABLE" for tabular data, "GRAPH" for graph data
+        data: Query results - GraphData for graph queries, array of records for table queries
+        summary: Query execution metadata including version
+    """
+    type: Literal["TABLE", "GRAPH"] = Field(..., description="Result type indicator")
+    data: Union[GraphData, List[Dict[str, Any]], None] = Field(
+        None, 
+        description="Query results - GraphData or array of records"
+    )
+    summary: Dict[str, str] = Field(
+        default_factory=lambda: {"version": "4.0.1"}, 
+        description="Query execution summary"
+    )
 
 
 class QueryResponse(BaseModel):
-    """Database query response"""
-    success: bool
-    data: Optional[Any] = None
-    error: Optional[str] = None
-    execution_time: Optional[float] = None
+    """
+    Database query response
+    
+    Response for: POST /api/{database_type}/{project_id}/query
+    
+    Attributes:
+        success: True if query executed successfully
+        data: Query results (null if error occurred)
+        error: Error message (null if successful)
+        execution_time: Query execution time in seconds
+    
+    Example:
+        {
+            "success": true,
+            "data": {
+                "type": "GRAPH",
+                "data": { "nodes": [...], "relationships": [...] },
+                "summary": { "version": "4.0.1" }
+            },
+            "error": null,
+            "execution_time": 3.5043985843658447
+        }
+    """
+    success: bool = Field(..., description="Query execution status")
+    data: Optional[QueryData] = Field(None, description="Query results")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    execution_time: Optional[float] = Field(None, description="Execution time in seconds")
 
 
 class SchemaResponse(BaseModel):
-    """Database schema response"""
-    success: bool
-    data: Optional[Dict[str, Dict[str, str]]] = None
-    error: Optional[str] = None
+    """
+    Database table schema response
+    
+    Response for: GET /api/{database_type}/{project_id}/schema
+    
+    Returns the underlying database table schema with column definitions.
+    
+    Attributes:
+        success: True if schema retrieval was successful
+        data: Map of table names to column definitions (table_name -> column_name -> type)
+        error: Error message if failed
+    
+    Example:
+        {
+            "success": true,
+            "data": {
+                "Client": {
+                    "id": "STRING(36)",
+                    "name": "STRING(255)",
+                    "is_fraud": "BOOL"
+                }
+            },
+            "error": null
+        }
+    """
+    success: bool = Field(..., description="Schema retrieval status")
+    data: Optional[Dict[str, Dict[str, str]]] = Field(
+        None, 
+        description="Table schemas: table_name -> column_name -> spanner_type"
+    )
+    error: Optional[str] = Field(None, description="Error message if failed")
+
 
 class Category(BaseModel):
-    name: str
-    props: Optional[List[str]] = None
-    keys: Optional[List[str]] = None
-    keysTypes: Optional[Dict[str, str]] = None
-    propsTypes: Optional[Dict[str, str]] = None
+    """
+    Graph node category/label definition
     
+    Defines the schema for a node category including properties and keys.
+    
+    Attributes:
+        name: Category/label name
+        props: List of all property names
+        keys: List of key property names (used in primary key)
+        keysTypes: Data types for key properties
+        propsTypes: Data types for all properties
+    
+    Example:
+        {
+            "name": "Client",
+            "props": ["id", "name", "is_fraud"],
+            "keys": ["id"],
+            "keysTypes": { "id": "STRING" },
+            "propsTypes": { 
+                "id": "STRING", 
+                "name": "STRING", 
+                "is_fraud": "BOOL" 
+            }
+        }
+    """
+    name: str = Field(..., description="Category/label name")
+    props: Optional[List[str]] = Field(None, description="List of property names")
+    keys: Optional[List[str]] = Field(None, description="List of key property names")
+    keysTypes: Optional[Dict[str, str]] = Field(
+        None, 
+        description="Data types for key properties (Spanner types)"
+    )
+    propsTypes: Optional[Dict[str, str]] = Field(
+        None, 
+        description="Data types for all properties (Spanner types)"
+    )
+
 
 class Relationship(BaseModel):
-    name: str
-    props: Optional[List[str]] = None
-    keys: Optional[List[str]] = None
-    keysTypes: Optional[Dict[str, str]] = None
-    propsTypes: Optional[Dict[str, str]] = None
-    startCategory: str
-    endCategory: str
+    """
+    Graph relationship type definition
+    
+    Defines the schema for a relationship type including properties, keys,
+    and connected node categories.
+    
+    Attributes:
+        name: Relationship type name
+        props: List of all property names
+        keys: List of key property names
+        keysTypes: Data types for key properties
+        propsTypes: Data types for all properties
+        startCategory: Source node category
+        endCategory: Target node category
+    
+    Example:
+        {
+            "name": "HAS_EMAIL",
+            "props": ["client_id", "email_id"],
+            "keys": ["client_id", "email_id"],
+            "keysTypes": { 
+                "client_id": "STRING", 
+                "email_id": "STRING" 
+            },
+            "propsTypes": { 
+                "client_id": "STRING", 
+                "email_id": "STRING" 
+            },
+            "startCategory": "Client",
+            "endCategory": "Email"
+        }
+    """
+    name: str = Field(..., description="Relationship type name")
+    props: Optional[List[str]] = Field(None, description="List of property names")
+    keys: Optional[List[str]] = Field(None, description="List of key property names")
+    keysTypes: Optional[Dict[str, str]] = Field(
+        None, 
+        description="Data types for key properties (Spanner types)"
+    )
+    propsTypes: Optional[Dict[str, str]] = Field(
+        None, 
+        description="Data types for all properties (Spanner types)"
+    )
+    startCategory: str = Field(..., description="Source node category")
+    endCategory: str = Field(..., description="Target node category")
 
 class GraphSchema(BaseModel):
-    categories: List[Category] 
-    relationships: List[Relationship]
+    """
+    Complete graph schema definition
+    
+    Contains all node categories and relationship types in the graph.
+    
+    Attributes:
+        categories: List of node category definitions
+        relationships: List of relationship type definitions
+    """
+    categories: List[Category] = Field(
+        default_factory=list, 
+        description="Array of node category definitions"
+    )
+    relationships: List[Relationship] = Field(
+        default_factory=list, 
+        description="Array of relationship type definitions"
+    )
+
 
 class GraphSchemaMap(BaseModel):
-    categories: Dict[str, Category]
-    relationships: Dict[str, Relationship]
+    """
+    Graph schema as dictionaries (alternative format)
+    
+    Same as GraphSchema but with categories and relationships as dictionaries
+    keyed by name for faster lookup.
+    """
+    categories: Dict[str, Category] = Field(
+        default_factory=dict, 
+        description="Map of category name to definition"
+    )
+    relationships: Dict[str, Relationship] = Field(
+        default_factory=dict, 
+        description="Map of relationship name to definition"
+    )
+
 
 class GraphSchemaResponse(BaseModel):
-    """Graph database schema response"""
-    success: bool
-    data: GraphSchema = Field(default_factory=lambda: GraphSchema(categories=[], relationships=[]))
-    error: Optional[str] = None
+    """
+    Graph schema response
+    
+    Response for: GET /api/{database_type}/{project_id}/graphSchema
+    
+    Returns the complete graph schema including all node categories
+    and relationship types.
+    
+    Attributes:
+        success: True if schema retrieval was successful
+        data: Graph schema with categories and relationships
+        error: Error message if failed
+    
+    Example:
+        {
+            "success": true,
+            "data": {
+                "categories": [
+                    {
+                        "name": "Client",
+                        "props": ["id", "name"],
+                        "keys": ["id"],
+                        "keysTypes": { "id": "STRING" },
+                        "propsTypes": { "id": "STRING", "name": "STRING" }
+                    }
+                ],
+                "relationships": [
+                    {
+                        "name": "HAS_EMAIL",
+                        "props": ["client_id", "email_id"],
+                        "startCategory": "Client",
+                        "endCategory": "Email"
+                    }
+                ]
+            },
+            "error": null
+        }
+    """
+    success: bool = Field(..., description="Schema retrieval status")
+    data: GraphSchema = Field(
+        default_factory=lambda: GraphSchema(categories=[], relationships=[]),
+        description="Graph schema definition"
+    )
+    error: Optional[str] = Field(None, description="Error message if failed")
+
 
 class SampleDataResponse(BaseModel):
-    """Sample data response"""
-    success: bool
-    data: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-
-class GraphData(BaseModel):
-    nodes: List[Dict[str, Any]] = Field(default_factory=list)
-    relationships: List[Dict[str, Any]] = Field(default_factory=list)
-
-class QueryData(BaseModel):
-    type: Literal["TABLE", "GRAPH"]
-    data:  List[Dict[str, Any]] | GraphData | None = None
-    summary: Dict[str, str] = Field(default_factory=lambda: {"version": "4.0.1"})
+    """
+    Sample data response
+    
+    Used for retrieving sample data from the database.
+    
+    Attributes:
+        success: True if data retrieval was successful
+        data: Sample data records
+        error: Error message if failed
+    """
+    success: bool = Field(..., description="Data retrieval status")
+    data: Optional[Dict[str, Any]] = Field(None, description="Sample data")
+    error: Optional[str] = Field(None, description="Error message if failed")

@@ -2,17 +2,32 @@
 
 > **Language**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.zh.md)
 
+## Prerequisites
+
+- **Node.js** >= 22.x — [点击这里下载](https://nodejs.org/en/download/)
+- **Python** >= 3.9.x — [点击这里下载](https://www.python.org/downloads/)
+- **uv** >= 0.9.x — [安装指南](https://docs.astral.sh/uv/)
+
+
 ## 🚀 快速开始
 
 ### 一键启动开发环境
+
 ```bash
+git clone https://github.com/Kineviz/graphxr-database-proxy.git
+cd graphxr-database-proxy
+uv venv
+uv pip install -r requirements.txt
 npm run dev            # 同时启动前后端 (推荐)
 ```
+
 这个命令会同时启动：
+
 - **后端服务器** (Python FastAPI): http://localhost:9080
 - **前端开发服务器** (React): http://localhost:3002
 
 ### 分别启动服务
+
 ```bash
 npm run dev:backend    # 只启动后端
 npm run dev:frontend   # 只启动前端

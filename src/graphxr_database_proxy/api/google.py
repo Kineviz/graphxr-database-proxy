@@ -169,7 +169,7 @@ async def list_google_databases(
             raise HTTPException(status_code=400, detail="Project ID not found")
         
         # Use Spanner client
-        spanner_client = spanner.Client(project=project_id, credentials=credentials)
+        spanner_client = get_spanner_client(project_id, credentials)
 
         result = []
         

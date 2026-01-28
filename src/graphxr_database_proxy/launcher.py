@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-启动脚本，确保正确的编码环境
+Launcher script to ensure proper encoding environment
 """
 
 import sys
@@ -8,19 +8,29 @@ import os
 import locale
 
 def setup_encoding():
-    """设置正确的编码环境"""
+    """Set up proper encoding environment"""
     
-    # 设置环境变量
+    # Set environment variables
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     os.environ['PYTHONUTF8'] = '1'
     
-    # Windows 特殊处理
+    # Completely disable OpenTelemetry SDK to prevent metrics export errors
+    os.environ["OTEL_SDK_DISABLED"] = "true"
+    os.environ["OTEL_METRICS_EXPORTER"] = "none"
+    os.environ["OTEL_TRACES_EXPORTER"] = "none"
+    os.environ["OTEL_LOGS_EXPORTER"] = "none"
+    os.environ["SPANNER_ENABLE_BUILT_IN_METRICS"] = "false"
+    os.environ["SPANNER_ENABLE_EXTENDED_TRACING"] = "false"
+    os.environ["SPANNER_ENABLE_METRICS"] = "false"
+    os.environ["GOOGLE_CLOUD_DISABLE_METRICS"] = "true"
+    
+    # Windows-specific handling
     if sys.platform == "win32":
         try:
-            # 设置控制台编码页为 UTF-8
+            # Set console code page to UTF-8
             os.system('chcp 65001 > nul')
             
-            # 设置 locale
+            # Set locale
             locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
         except:
             try:
@@ -28,7 +38,7 @@ def setup_encoding():
             except:
                 pass
         
-        # 重定向标准输出以支持 UTF-8
+        # Redirect standard output to support UTF-8
         try:
             import codecs
             sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
@@ -37,15 +47,15 @@ def setup_encoding():
             pass
 
 def main():
-    """主启动函数"""
+    """Main launcher function"""
     setup_encoding()
     
-    # 导入并运行主应用
+    # Import and run the main application
     try:
         from .main import main as app_main
         app_main()
     except ImportError:
-        # 如果是直接运行此文件
+        # If running this file directly
         sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
         from src.graphxr_database_proxy.main import main as app_main
         app_main()
