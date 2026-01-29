@@ -64,6 +64,14 @@ jobs:
         fi
         echo "Version: $(cat $GITHUB_OUTPUT)"
     
+    - name: Cache npm dependencies
+      uses: actions/cache@v3
+      with:
+        path: frontend/node_modules
+        key: ${{ runner.os }}-npm-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-npm-
+    
     - name: Install frontend dependencies
       run: |
         echo "📦 Installing frontend dependencies..."
@@ -99,8 +107,8 @@ jobs:
         tags: |
           kineviz/graphxr-database-proxy:latest
           ${{ steps.version.outputs.version != 'latest' && format('kineviz/graphxr-database-proxy:{0}', steps.version.outputs.version) || '' }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: type=gha,scope=dockerhub
+        cache-to: type=gha,mode=max,scope=dockerhub
         platforms: linux/amd64,linux/arm64
     
     - name: Build and push Docker image to Aliyun
@@ -113,8 +121,8 @@ jobs:
         tags: |
           registry.cn-hangzhou.aliyuncs.com/kineviz/graphxr-database-proxy:latest
           ${{ steps.version.outputs.version != 'latest' && format('registry.cn-hangzhou.aliyuncs.com/kineviz/graphxr-database-proxy:{0}', steps.version.outputs.version) || '' }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: type=gha,scope=aliyun
+        cache-to: type=gha,mode=max,scope=aliyun
         platforms: linux/amd64,linux/arm64
     
     - name: Image digest
