@@ -4,6 +4,20 @@ Google Application Default Credentials (ADC) Example
 This example demonstrates how to configure and start the GraphXR Database Proxy
 using Google Application Default Credentials (ADC) for authentication.
 
+Quick Start:
+    ```bash
+    git clone git@github.com:Kineviz/graphxr-database-proxy.git
+    cd graphxr-database-proxy
+    uv venv
+    source .venv/bin/activate
+    uv pip install graphxr-database-proxy google-auth google-cloud-resource-manager
+    export PROJECT_ID="your-gcp-project-id"
+    export INSTANCE_ID="your-spanner-instance-id"
+    export DATABASE_ID="your-spanner-database-id" # e.g. "retail"
+    export PROPERTY_GRAPH_NAME="your-property-graph-name" # e.g. "ECommerceGraph"
+    python examples/google_adc.py
+    ```
+
 Configure ADC using one of these methods:
     - Local development: 
         - Install gcloud CLI: https://cloud.google.com/sdk/docs/install
@@ -13,26 +27,60 @@ Configure ADC using one of these methods:
     - Environment variable: Set GOOGLE_APPLICATION_CREDENTIALS to service account JSON path
 
 Installation:
-    pip install graphxr-database-proxy google-auth
+    uv pip install graphxr-database-proxy google-auth google-cloud-resource-manager
 
 Usage:
-    1. Update INSTANCE_ID, DATABASE_ID, and PROPERTY_GRAPH_NAME below
+    1. Set environment variables or update defaults in the script:
+       - PROJECT_ID (required)
+       - INSTANCE_ID (required)
+       - DATABASE_ID (required)
+       - PROPERTY_GRAPH_NAME (optional)
     2. Run: python examples/google_adc.py
-    3. Connect GraphXR to: http://localhost:3002/api/spanner/{project_name}
+    3. Connect GraphXR to the URL shown in the console output
 
 For more information:
     - ADC documentation: https://cloud.google.com/docs/authentication/production
     - GraphXR documentation: https://kineviz.com/docs
 """
 
-import google.auth
+import os
+import socket
 from graphxr_database_proxy import DatabaseProxy
 
 
-# Configuration - Update these values for your Spanner instance
-INSTANCE_ID = "demo-2025"           # Your Spanner instance ID
-DATABASE_ID = "paysim"              # Your Spanner database ID
-PROPERTY_GRAPH_NAME = "graph_view"  # Your property graph name (optional)
+def find_available_port(start=3002, max_attempts=100):
+    """Find an available port starting from the given port."""
+    for port in range(start, start + max_attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(('', port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"Could not find available port in range {start}-{start + max_attempts}")
+
+
+# Configuration - Set via environment variables or update defaults below
+PROJECT_ID = os.getenv("PROJECT_ID")           # GCP project ID (required)
+INSTANCE_ID = os.getenv("INSTANCE_ID")            # Your Spanner instance ID
+DATABASE_ID = os.getenv("DATABASE_ID")                  # Your Spanner database ID
+PROPERTY_GRAPH_NAME = os.getenv("PROPERTY_GRAPH_NAME")  # Your property graph name (optional)
+
+# Required environment variables
+REQUIRED_ENV_VARS = ["PROJECT_ID", "INSTANCE_ID", "DATABASE_ID", "PROPERTY_GRAPH_NAME"]
+
+
+def check_required_env_vars():
+    """Check if all required environment variables are set."""
+    missing = [var for var in REQUIRED_ENV_VARS if not os.getenv(var)]
+    if missing:
+        print(f"\n[ERROR] Missing required environment variables: {', '.join(missing)}")
+        print("\nPlease set them before running:")
+        for var in missing:
+            print(f"  export {var}=\"your-value\"")
+        print()
+        return False
+    return True
 
 
 def quick_start_with_google_adc():
@@ -40,34 +88,23 @@ def quick_start_with_google_adc():
     Start the GraphXR Database Proxy using Google ADC authentication.
     
     This function:
-    1. Automatically detects the GCP project ID from ADC
+    1. Uses configuration from environment variables
     2. Configures the proxy with ADC credentials
-    3. Starts the server on port 3002
+    3. Starts the server on an available port (starting from 3002)
     
     Returns:
         None
-    
-    Raises:
-        google.auth.exceptions.DefaultCredentialsError: If ADC is not configured
     """
     # Create proxy instance
     proxy = DatabaseProxy()
 
-    # Get default credentials and project ID from ADC
-    # This will automatically use credentials from:
-    # - GOOGLE_APPLICATION_CREDENTIALS env variable
-    # - gcloud CLI default credentials
-    # - GCE/GKE service account
-    _, project_id = google.auth.default()
-    
     # Use project_id as the project name
-    project_name = project_id
 
     # Add project with ADC credentials
     proxy.add_project(
-        project_name=project_name,      # Project name for the proxy
+        project_name=PROJECT_ID,      # Project name for the proxy
         database_type="spanner",        # Database type
-        project_id=project_id,          # GCP project ID (auto-detected from ADC)
+        project_id=PROJECT_ID,          # GCP project ID
         instance_id=INSTANCE_ID,        # Spanner instance ID
         database_id=DATABASE_ID,        # Spanner database ID
         graph_name=PROPERTY_GRAPH_NAME, # Property graph name (optional)
@@ -76,16 +113,19 @@ def quick_start_with_google_adc():
         }
     )
 
-    # Start the proxy server
+    # Start the proxy server on an available port
+    port = find_available_port()
     print(f"\n GraphXR Database Proxy Server Starting...")
-    print(f"\n Server URL: http://localhost:3002")
-    print(f" GraphXR API: http://localhost:3002/api/spanner/{project_name}")
+    print(f"\n Server URL: http://localhost:{port}")
+    print(f" GraphXR API: http://localhost:{port}/api/spanner/{PROJECT_ID}")
     print(f"\n Copy the GraphXR API URL above into GraphXR using 'Database Proxy' connection type.\n")
     
-    proxy.start(port=3002)
+    proxy.start(port=port)
 
 
 if __name__ == "__main__":
+    if not check_required_env_vars():
+        exit(1)
     try:
         quick_start_with_google_adc()
     except Exception as e:
