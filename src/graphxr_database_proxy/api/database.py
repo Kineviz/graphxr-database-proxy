@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Depends, Path
 from ..models.project import DatabaseType, QueryRequest, QueryResponse, SchemaResponse, GraphSchemaResponse, SampleDataResponse, APIInfo
 from ..services.project_service import ProjectService
 from ..drivers.factory import DriverFactory
-from .auth import verify_api_key
+from .auth import verify_api_key_or_admin
 
 router = APIRouter(prefix="/api", tags=["database"])
 
@@ -20,7 +20,7 @@ async def get_database_info(
     database_type: DatabaseType = Path(..., description="Database type"),
     project_name: str = Path(..., description="Project name"),
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_api_key_or_admin)
 ):
     """Get database API information"""
     try:
@@ -57,7 +57,7 @@ async def execute_query(
     project_name: str = Path(..., description="Project name"),
     query_request: QueryRequest = ...,
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_api_key_or_admin)
 ):
     """Execute a database query"""
     try:
@@ -96,7 +96,7 @@ async def get_schema(
     database_type: DatabaseType = Path(..., description="Database type"),
     project_name: str = Path(..., description="Project name"),
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_api_key_or_admin)
 ):
     """Get database schema"""
     try:
@@ -132,7 +132,7 @@ async def get_token_status(
     database_type: DatabaseType = Path(..., description="Database type"),
     project_name: str = Path(..., description="Project name"),
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_api_key_or_admin)
 ):
     """Get OAuth token status information"""
     try:
@@ -172,7 +172,7 @@ async def test_connection(
     database_type: DatabaseType = Path(..., description="Database type"),
     project_name: str = Path(..., description="Project name"),
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_api_key_or_admin)
 ):
     """Test database connection"""
     try:
@@ -207,7 +207,7 @@ async def get_graph_schema(
     database_type: DatabaseType = Path(..., description="Database type"),
     project_name: str = Path(..., description="Project name"),
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_api_key_or_admin)
 ):
     """Get graph database schema"""
     try:
@@ -243,7 +243,7 @@ async def get_sample_data(
     database_type: DatabaseType = Path(..., description="Database type"),
     project_name: str = Path(..., description="Project name"),
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_api_key_or_admin)
 ):
     """Get sample data from database"""
     try:

@@ -374,3 +374,4 @@ frontend/.env.production.local
 
 src/graphxr_database_proxy/static/
 .pypirc.template
+config/*.json

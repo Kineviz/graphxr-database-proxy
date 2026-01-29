@@ -6,21 +6,21 @@
   "scripts": {
     "dev": "concurrently -c \"blue,green\" -n \"Backend,Frontend\" \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "nodemon --config nodemon.uv.json",
-    "dev:backend:system": "nodemon --config nodemon.system.json",
     "dev:frontend": "cd frontend && npm start",
     "build": "cd frontend && npm run build",
     "build:frontend": "cd frontend && npm run build",
-    "start": ".venv/Scripts/python.exe -m uvicorn src.graphxr_database_proxy.main:app --host 0.0.0.0 --port 9080",
-    "start:prod": ".venv/Scripts/python.exe -m uvicorn src.graphxr_database_proxy.main:app --host 0.0.0.0 --port 9080",
+    "start": "uv run python -m uvicorn src.graphxr_database_proxy.main:app --host 0.0.0.0 --port 9080",
+    "start:prod": "uv run python -m uvicorn src.graphxr_database_proxy.main:app --host 0.0.0.0 --port 9080",
     "install:frontend": "cd frontend && npm install",
-    "update:version": "python scripts/update_version.py",
+    "update:version": "uv run python scripts/update_version.py",
     "setup": "npm run install:frontend && npm run build:frontend",
-    "clean": "rmdir /s /q node_modules frontend\\node_modules frontend\\dist 2>nul || echo Clean completed",
+    "clean": "rimraf node_modules frontend/node_modules frontend/dist",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
     "nodemon": "^3.1.10",
+    "rimraf": "^6.0.1",
     "webpack": "^5.88.2"
   },
   "keywords": [

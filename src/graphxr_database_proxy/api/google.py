@@ -29,9 +29,12 @@ import requests
 from ..models.google import   GoogleProject, SpannerDatabase
 from google.api_core.exceptions import GoogleAPIError
 from ..common.util import get_default_oauth_config
-from .auth import verify_api_key
+from .auth import verify_admin_token
 
 router = APIRouter(tags=["google"])
+
+# Note: These endpoints require admin authentication when ADMIN_PASSWORD is set.
+# They also have their own Google Cloud authentication (OAuth/service account).
 
 
 def get_spanner_client(project_id, credentials):
@@ -89,7 +92,7 @@ def get_google_credentials(auth_info, auth_type='service_account'):
 @router.post("/api/google/spanner/list_projects", response_model=List[GoogleProject])
 async def list_google_projects(
     request: Request,
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_admin_token)
 ):
     """List Google Cloud projects"""
     try:
@@ -169,7 +172,7 @@ async def list_google_projects(
 @router.post("/api/google/spanner/list_databases", response_model=list[SpannerDatabase])
 async def list_google_databases(
     request_data: Dict[str, Any],
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_admin_token)
 ):
     """List Google Cloud Spanner databases"""
     try:
@@ -421,7 +424,7 @@ async def google_spanner_login(request: Request):
 @router.post("/api/google/refresh-token")
 async def refresh_google_token(
     request: Request,
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_admin_token)
 ):
     """Refresh Google OAuth2 access token"""
     try:

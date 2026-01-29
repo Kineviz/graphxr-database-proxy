@@ -139,7 +139,7 @@ module.exports = (env, argv) => {
         serveIndex: false,
         watch: false, // Keep watching disabled to prevent reload loops
       },
-      port: 3002,
+      port: process.env.PORT || "auto", // Use PORT env var or auto-find available port
       open: true,
       hot: true,
       liveReload: false, // Keep live reload disabled

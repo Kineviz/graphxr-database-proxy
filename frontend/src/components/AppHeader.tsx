@@ -1,12 +1,16 @@
 import React from 'react';
 import { Layout, Typography, Space, Button, Menu } from 'antd';
-import { DatabaseOutlined, ApiOutlined, HomeOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { DatabaseOutlined, ApiOutlined, PlusOutlined, UnorderedListOutlined, SettingOutlined, LogoutOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const { Header } = Layout;
 const { Title } = Typography;
 
-const AppHeader: React.FC = () => {
+interface AppHeaderProps {
+  onLogout?: () => void;
+}
+
+const AppHeader: React.FC<AppHeaderProps> = ({ onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -16,11 +20,6 @@ const AppHeader: React.FC = () => {
 
   const menuItems = [
     {
-      key: '/',
-      icon: <HomeOutlined />,
-      label: 'Home',
-    },
-    {
       key: '/listProjects',
       icon: <UnorderedListOutlined />,
       label: 'Projects',
@@ -29,6 +28,11 @@ const AppHeader: React.FC = () => {
       key: '/addProject',
       icon: <PlusOutlined />,
       label: 'Add Project',
+    },
+    {
+      key: '/settings',
+      icon: <SettingOutlined />,
+      label: 'Settings',
     },
   ];
 
@@ -64,6 +68,17 @@ const AppHeader: React.FC = () => {
           >
             API Docs
           </Button>
+          {onLogout && (
+            <Button 
+              type="text" 
+              icon={<LogoutOutlined />} 
+              onClick={onLogout}
+              className="header-button"
+              style={{ color: '#ff7875' }}
+            >
+              Logout
+            </Button>
+          )}
         </Space>
       </div>
     </Header>

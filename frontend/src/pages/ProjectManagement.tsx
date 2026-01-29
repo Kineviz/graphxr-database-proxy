@@ -54,7 +54,32 @@ const ProjectManagement: React.FC = () => {
   const [apiUrlsModalVisible, setApiUrlsModalVisible] = useState(false);
 
   useEffect(() => {
-    loadProjects();
+    let cancelled = false;
+    
+    const loadProjectsAsync = async () => {
+      setLoading(true);
+      try {
+        const data = await projectService.getProjects();
+        if (!cancelled) {
+          setProjects(data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          message.error('Failed to load projects');
+          console.error('Error loading projects:', error);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProjectsAsync();
+    
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // 当路由变为编辑模式时，查找对应的项目

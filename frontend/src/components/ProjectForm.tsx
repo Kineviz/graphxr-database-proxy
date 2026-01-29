@@ -22,6 +22,7 @@ import {
   Project,
   ProjectCreate,
 } from "../types/project";
+import { projectService } from "../services/projectService";
 
 const { Option } = Select;
 
@@ -210,58 +211,38 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   const getProjectsList = async () => {
     try {
       setLoading({ listDatabases: false, listProjects: true });
-      const response = await fetch("/api/google/spanner/list_projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          auth: serviceAccountKey,
-          auth_type: authType,
-        }),
+      const projects = await projectService.listGoogleProjects(serviceAccountKey, authType);
+      setProjectsList(Array.isArray(projects) ? projects : []);
+      updateServiceAccountKey({
+        ...serviceAccountKey,
+        project_id: projects.length > 0 ? projects[0].id : "",
       });
-      if (response.ok) {
-        const projects = await response.json();
-        setProjectsList(Array.isArray(projects) ? projects : []);
-        updateServiceAccountKey({
-          ...serviceAccountKey,
-          project_id: projects.length > 0 ? projects[0].id : "",
-        });
+    } catch (error: any) {
+      if (authType === "google_ADC") {
+        message.error("Failed to fetch projects. Please ensure that Application Default Credentials are properly configured in your environment.");
+      } else if (error.response?.status === 401) {
+        message.error("Authentication required. Please login first.");
       } else {
-        if(authType === "google_ADC") {
-          message.error("Failed to fetch projects. Please ensure that Application Default Credentials are properly configured in your environment.");
-        } else {
-          message.error("Failed to fetch projects");
-        }
+        message.error("Failed to fetch projects");
       }
+    } finally {
       setLoading({ listDatabases: false, listProjects: false });
-    } catch (error) {
-      message.error("Error fetching projects");
     }
   };
 
   const getDatabaseList = async () => {
     try {
       setLoading({ listDatabases: true, listProjects: false });
-      const response = await fetch("/api/google/spanner/list_databases", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          auth: serviceAccountKey,
-          auth_type: authType,
-        }),
-      });
-      if (response.ok) {
-        const databases = await response.json();
-        setDatabases(databases);
+      const databases = await projectService.listGoogleDatabases(serviceAccountKey, authType);
+      setDatabases(databases);
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        message.error("Authentication required. Please login first.");
       } else {
         message.error("Failed to fetch databases");
       }
+    } finally {
       setLoading({ listDatabases: false, listProjects: false });
-    } catch (error) {
-      message.error("Error fetching databases");
     }
   };
 

@@ -1,12 +1,14 @@
 """
 Project management API endpoints
+
+These endpoints require admin authentication when ADMIN_PASSWORD is set.
 """
 
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 from ..models.project import Project, ProjectCreate, ProjectUpdate
 from ..services.project_service import ProjectService
-from .auth import verify_api_key
+from .auth import verify_admin_token
 
 router = APIRouter(prefix="/api/project", tags=["projects"])
 
@@ -19,7 +21,7 @@ def get_project_service() -> ProjectService:
 async def create_project(
     project_data: ProjectCreate,
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_admin_token)
 ):
     """Create a new project"""
     try:
@@ -40,7 +42,7 @@ async def create_project(
 @router.get("/list", response_model=List[Project])
 async def list_projects(
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_admin_token)
 ):
     """List all projects"""
     try:
@@ -54,7 +56,7 @@ async def list_projects(
 async def get_project(
     project_id: str,
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_admin_token)
 ):
     """Get a project by ID"""
     try:
@@ -73,7 +75,7 @@ async def update_project(
     project_id: str,
     update_data: ProjectUpdate,
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_admin_token)
 ):
     """Update a project"""
     try:
@@ -91,7 +93,7 @@ async def update_project(
 async def delete_project(
     project_id: str,
     service: ProjectService = Depends(get_project_service),
-    _: str | None = Depends(verify_api_key)
+    _: str | None = Depends(verify_admin_token)
 ):
     """Delete a project"""
     try:

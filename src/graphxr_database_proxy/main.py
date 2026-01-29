@@ -3,6 +3,10 @@
 Main FastAPI application
 """
 
+# Load .env file first, before any other imports
+from dotenv import load_dotenv
+load_dotenv()  # Loads from .env in current directory or parent directories
+
 import os
 
 # Completely disable OpenTelemetry SDK to prevent metrics export errors
@@ -26,6 +30,8 @@ from fastapi.responses import FileResponse
 from .api.projects import router as projects_router
 from .api.database import router as database_router
 from .api.google import router as google_router
+from .api.settings import router as settings_router
+from .api.admin import router as admin_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -46,9 +52,11 @@ app.add_middleware(
 )
 
 # Include API routers
+app.include_router(admin_router)  # Admin auth (login/logout/status)
 app.include_router(projects_router)
 app.include_router(database_router)
 app.include_router(google_router)
+app.include_router(settings_router)
 
 
 @app.get("/health")

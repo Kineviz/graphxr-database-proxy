@@ -16,7 +16,7 @@ A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to 
 - **Open Source**: Fully auditable and customizable
 - **Pure Python**: Easy to deploy and maintain
 
-## ⚡ Quick Start for Spanner Graph
+## ⚡ Quick Start (Spanner Graph)
 
 1. Run the following commands to start graphxr-database-proxy (requires [uv](https://docs.astral.sh/uv/), [node.js](https://nodejs.org/en/download/))
 
@@ -24,14 +24,11 @@ A secure middleware that connects [GraphXR](https://www.kineviz.com/graphxr) to 
 git clone https://github.com/Kineviz/graphxr-database-proxy.git
 cd graphxr-database-proxy
 uv venv
-source .venv/bin/activate # or .venv/bin/activate on Windows
-uv pip install -e ".[ui]"
 uv pip install -r requirements.txt
-cd frontend && npm install && npm run build && cd -
-graphxr-proxy --ui 
+npm run dev
 ```
 
-2. Visit http://localhost:9080/
+2. Web UI should open automatically in your browser. Or visit http://localhost:8080/.
 3. Click "Create New Project"
 4. Project Name: "Test"
 5. Database Type: "Google Cloud Spanner"
@@ -41,8 +38,25 @@ graphxr-proxy --ui
 9. Select "Database ID" e.g. "cymbal"
 10. Select "Property Graph" e.g. "ECommerceGraph"
 11. Click "Create"
-12. For the new project, under Actions, copy the API URL. e.g. "http://localhost:9080/api/spanner/Test"
+12. For the new project, under Actions, copy the API URL. e.g. "http://localhost:8080/api/spanner/Test"
 13. Go back to GraphXR's Create Project wizard and paste the API URL into GraphXR for a project with a "Database Proxy" database type.
+
+### Adding authentication to the proxy
+
+```
+cp .env.example .env
+```
+
+Edit the .env file and add the following variables:
+
+```
+# Optional: Set a password for the admin interface
+ADMIN_PASSWORD=your-admin-password-here
+
+# Optional: Set a secure API key for the proxy API
+# You can also generate an API key in the Web UI under Settings.
+API_KEY=your-secure-api-key-here
+```
 
 ## Other ways to start graphxr-database-proxy
 
