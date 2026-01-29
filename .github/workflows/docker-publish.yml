@@ -1,0 +1,142 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on docker version tags (e.g., docker-v1.0.4)
+    branches:
+      - main
+      - develop
+  
+  workflow_dispatch:  # Allow manual trigger
+    inputs:
+      registry:
+        description: 'Docker registry to push to'
+        required: true
+        default: 'dockerhub'
+        type: choice
+        options:
+        - dockerhub
+        - aliyun
+        - both
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Docker Hub
+      if: ${{ github.event.inputs.registry != 'aliyun' || github.event_name != 'workflow_dispatch' }}
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME_PUBLIC_REPO }}
+        password: ${{ secrets.DOCKER_PASSWORD_PUBLIC_REPO }}
+    
+    - name: Login to Aliyun Container Registry
+      if: ${{ github.event.inputs.registry == 'aliyun' || github.event.inputs.registry == 'both' }}
+      uses: docker/login-action@v3
+      with:
+        registry: registry.cn-hangzhou.aliyuncs.com
+        username: ${{ secrets.ALIYUN_DOCKER_USERNAME_PUBLIC_REPO }}
+        password: ${{ secrets.ALIYUN_DOCKER_PASSWORD_PUBLIC_REPO }}
+    
+    - name: Get version tag
+      id: version
+      run: |
+        if [[ "${{ github.ref }}" == refs/tags/docker-v* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/docker-v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tags=latest,$VERSION" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.ref }}" == refs/heads/develop ]]; then
+          echo "version=develop" >> $GITHUB_OUTPUT
+          echo "tags=develop" >> $GITHUB_OUTPUT
+        else
+          echo "version=latest" >> $GITHUB_OUTPUT
+          echo "tags=latest" >> $GITHUB_OUTPUT
+        fi
+        echo "Version: $(cat $GITHUB_OUTPUT)"
+    
+    - name: Install frontend dependencies
+      run: |
+        echo "📦 Installing frontend dependencies..."
+        cd frontend
+        npm install
+        cd ..
+    
+    - name: Build frontend
+      run: |
+        echo "🏗️ Building frontend..."
+        cd frontend
+        npm run build
+        cd ..
+        echo "✅ Frontend build completed"
+    
+    - name: Verify frontend build
+      run: |
+        if [ -d "frontend/dist" ]; then
+          echo "✅ Frontend dist directory exists"
+          ls -la frontend/dist
+        else
+          echo "❌ Frontend dist directory not found"
+          exit 1
+        fi
+    
+    - name: Build and push Docker image to Docker Hub
+      if: ${{ github.event.inputs.registry != 'aliyun' || github.event_name != 'workflow_dispatch' }}
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./docker/Dockerfile
+        push: true
+        tags: |
+          kineviz/graphxr-database-proxy:latest
+          ${{ steps.version.outputs.version != 'latest' && format('kineviz/graphxr-database-proxy:{0}', steps.version.outputs.version) || '' }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+    
+    - name: Build and push Docker image to Aliyun
+      if: ${{ github.event.inputs.registry == 'aliyun' || github.event.inputs.registry == 'both' }}
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./docker/Dockerfile
+        push: true
+        tags: |
+          registry.cn-hangzhou.aliyuncs.com/kineviz/graphxr-database-proxy:latest
+          ${{ steps.version.outputs.version != 'latest' && format('registry.cn-hangzhou.aliyuncs.com/kineviz/graphxr-database-proxy:{0}', steps.version.outputs.version) || '' }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+    
+    - name: Image digest
+      run: echo "Image built and pushed successfully! 🎉"
+    
+    - name: Create release notes
+      if: startsWith(github.ref, 'refs/tags/docker-v')
+      run: |
+        echo "## 🐳 Docker Image Released!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Pull the image:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "docker pull kineviz/graphxr-database-proxy:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "docker pull kineviz/graphxr-database-proxy:latest" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Run the container:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "docker run -p 9080:9080 kineviz/graphxr-database-proxy:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
