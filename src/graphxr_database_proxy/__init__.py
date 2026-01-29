@@ -4,7 +4,7 @@ GraphXR Database Proxy
 A secure middleware for connecting GraphXR Frontend to various backend databases.
 """
 
-__version__ = "1.0.3"
+__version__ = "1.1.0"
 __author__ = "Kineviz"
 __email__ = "info@kineviz.com"
 
