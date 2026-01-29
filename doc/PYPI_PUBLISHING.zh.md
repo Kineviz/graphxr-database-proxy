@@ -2,6 +2,11 @@
 
 GraphXR Database Proxy 发布到 PyPI (pip) 的完整步骤。
 
+> **语言**: [English](PYPI_PUBLISHING.md) | [中文](PYPI_PUBLISHING.zh.md)
+
+[返回英文版开发指南](DEV_GUIDE.md)
+
+
 ## 📋 发布前准备
 
 ### 1. 环境准备
@@ -37,6 +42,11 @@ pyproject.toml   # 项目配置
 ## 🔧 发布步骤
 
 ### 🚀 快速发布 (推荐)
+
+
+> 创建新版本，使用以下命令：
+> ***python scripts/update_version.py <new_version>***
+
 
 使用我们的自动化脚本，一键完成构建和发布：
 
@@ -176,122 +186,13 @@ set TWINE_USERNAME=__token__
 set TWINE_PASSWORD=pypi-your-api-token-here
 ```
 
-## 📦 自动化发布脚本
-
-创建发布脚本 `scripts/publish.py`:
-
-```python
-#!/usr/bin/env python3
-"""
-自动化发布脚本
-"""
-
-import subprocess
-import sys
-import os
-from pathlib import Path
-
-def run_command(command, description):
-    """运行命令并检查结果"""
-    print(f"🔄 {description}...")
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
-    
-    if result.returncode != 0:
-        print(f"❌ {description} 失败:")
-        print(result.stderr)
-        sys.exit(1)
-    
-    print(f"✅ {description} 成功")
-    return result.stdout
-
-def main():
-    """主发布流程"""
-    print("🚀 开始发布 GraphXR Database Proxy...")
-    
-    # 检查是否在正确的目录
-    if not Path("pyproject.toml").exists():
-        print("❌ 请在项目根目录运行此脚本")
-        sys.exit(1)
-    
-    # 1. 清理构建文件
-    run_command("rm -rf dist/ build/ *.egg-info/", "清理构建文件")
-    
-    # 2. 构建包
-    run_command("python -m build", "构建发布包")
-    
-    # 3. 检查包
-    run_command("twine check dist/*", "验证包内容")
-    
-    # 4. 询问发布目标
-    target = input("\n选择发布目标 (test/prod): ").lower()
-    
-    if target == "test":
-        # 发布到 TestPyPI
-        run_command("twine upload --repository testpypi dist/*", "上传到 TestPyPI")
-        print("\n🎉 发布到 TestPyPI 成功!")
-        print("测试安装: pip install --index-url https://test.pypi.org/simple/ graphxr-database-proxy")
-        
-    elif target == "prod":
-        # 确认发布到正式 PyPI
-        confirm = input("\n⚠️  确认发布到正式 PyPI? (yes/no): ")
-        if confirm.lower() == "yes":
-            run_command("twine upload dist/*", "上传到 PyPI")
-            print("\n🎉 发布到 PyPI 成功!")
-            print("安装: pip install graphxr-database-proxy")
-        else:
-            print("❌ 发布已取消")
-    else:
-        print("❌ 无效选择")
-
-if __name__ == "__main__":
-    main()
-```
-
-## 🔄 GitHub Actions 自动发布
-
-创建 `.github/workflows/publish.yml`:
-
-```yaml
-name: Publish to PyPI
-
-on:
-  push:
-    tags:
-      - 'v*'  # 当推送版本标签时触发
-
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build twine
-    
-    - name: Build package
-      run: python -m build
-    
-    - name: Check package
-      run: twine check dist/*
-    
-    - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: twine upload dist/*
-```
 
 ## 📝 版本管理
 
 ### 版本号规范
+
+> You should modify the version in package.json , pyproject.toml , src/graphxr_database_proxy/__init__.py
+> Use **python scripts/update_version.py <new_version>** to update all files at once.
 
 遵循 [语义化版本](https://semver.org/lang/zh-CN/):
 

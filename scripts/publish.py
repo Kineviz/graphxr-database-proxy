@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-GraphXR Database Proxy 自动化发布脚本
+GraphXR Database Proxy Automated Publishing Script
 
-用法:
-    python scripts/publish.py test    # 发布到 TestPyPI
-    python scripts/publish.py prod    # 发布到 PyPI
-    python scripts/publish.py build   # 仅构建验证
-    python scripts/publish.py         # 交互式选择
+Usage:
+    python scripts/publish.py test    # Publish to TestPyPI
+    python scripts/publish.py prod    # Publish to PyPI
+    python scripts/publish.py build   # Build and validate only
+    python scripts/publish.py         # Interactive selection
 """
 
 import subprocess
@@ -16,16 +16,16 @@ import os
 import argparse
 from pathlib import Path
 
-# Windows 编码修复
+# Windows encoding fix
 if sys.platform == "win32":
     import codecs
     import locale
     
-    # 设置环境变量解决 rich/twine 编码问题
+    # Set environment variables to fix rich/twine encoding issues
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     os.environ['PYTHONUTF8'] = '1'
     
-    # 修复控制台输出编码
+    # Fix console output encoding
     try:
         sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
         sys.stderr = codecs.getwriter("utf-8")(sys.stderr.detach())
@@ -33,14 +33,14 @@ if sys.platform == "win32":
         pass
 
 def get_python_executable():
-    """获取当前使用的 Python 解释器路径"""
+    """Get the path of the current Python interpreter"""
     return sys.executable
 
 def run_command(command, description):
-    """运行命令并检查结果"""
+    """Run command and check result"""
     print(f"🔄 {description}...")
     
-    # 如果命令包含 python，替换为当前的 Python 解释器
+    # If command contains python, replace with current Python interpreter
     if command.startswith("python "):
         command = command.replace("python ", f"{get_python_executable()} ", 1)
     elif command == "python -m build":
@@ -56,76 +56,76 @@ def run_command(command, description):
             errors='ignore'
         )
     except Exception as e:
-        print(f"❌ {description} 失败: {e}")
+        print(f"❌ {description} failed: {e}")
         return False
     
     if result.returncode != 0:
-        print(f"❌ {description} 失败:")
+        print(f"❌ {description} failed:")
         if result.stderr:
             print(result.stderr)
         return False
     
-    print(f"✅ {description} 成功")
+    print(f"✅ {description} succeeded")
     if result.stdout and result.stdout.strip():
-        print(f"   输出: {result.stdout.strip()}")
+        print(f"   Output: {result.stdout.strip()}")
     return True
 
 def check_and_install_dependencies():
-    """检查并安装发布依赖"""
-    print("🔍 检查发布依赖...")
+    """Check and install publishing dependencies"""
+    print("🔍 Checking publishing dependencies...")
     
-    # 检查并安装必要的 Python 包
+    # Check and install required Python packages
     required_packages = ["build", "twine"]
     missing_packages = []
     
     for package in required_packages:
         try:
             __import__(package)
-            print(f"✅ {package} 已安装")
+            print(f"✅ {package} installed")
         except ImportError:
             missing_packages.append(package)
-            print(f"❌ 缺少包: {package}")
+            print(f"❌ Missing package: {package}")
     
     if missing_packages:
-        print(f"\n📦 安装缺少的包: {', '.join(missing_packages)}")
+        print(f"\n📦 Installing missing packages: {', '.join(missing_packages)}")
         install_command = f"pip install {' '.join(missing_packages)}"
         
-        # 询问是否自动安装
-        auto_install = input("🤔 是否自动安装缺少的包? (y/n): ").lower().strip()
-        if auto_install in ['y', 'yes', '是']:
-            if not run_command(install_command, f"安装 {', '.join(missing_packages)}"):
-                print("❌ 依赖安装失败，请手动安装:")
+        # Ask for automatic installation
+        auto_install = input("🤔 Install missing packages automatically? (y/n): ").lower().strip()
+        if auto_install in ['y', 'yes']:
+            if not run_command(install_command, f"Install {', '.join(missing_packages)}"):
+                print("❌ Dependency installation failed, please install manually:")
                 print(f"   {install_command}")
                 return False
         else:
-            print("❌ 请手动安装缺少的包:")
+            print("❌ Please install missing packages manually:")
             print(f"   {install_command}")
             return False
     
-    print("✅ 所有依赖检查通过")
+    print("✅ All dependency checks passed")
     return True
 
 def check_requirements():
-    """检查发布要求"""
-    print("🔍 检查发布要求...")
+    """Check publishing requirements"""
+    print("🔍 Checking publishing requirements...")
     
-    # 检查是否在正确的目录
+    # Check if in correct directory
     if not Path("pyproject.toml").exists():
-        print("❌ 请在项目根目录运行此脚本")
+        print("❌ Please run this script from the project root directory")
         return False
     
-    # 检查必要文件
+    # Check required files
     required_files = ["README.md", "LICENSE", "pyproject.toml"]
     for file in required_files:
         if not Path(file).exists():
-            print(f"❌ 缺少文件: {file}")
+            print(f"❌ Missing file: {file}")
             return False
     
-    print("✅ 所有要求检查通过")
+    print("✅ All requirement checks passed")
     return True
 
 def get_version():
-    """从 pyproject.toml 获取版本号"""
+    """Get version number from pyproject.toml"""
     try:
         with open("pyproject.toml", "r", encoding="utf-8") as f:
             for line in f:
@@ -133,47 +133,47 @@ def get_version():
                     version = line.split("=")[1].strip().strip('"')
                     return version
     except Exception as e:
-        print(f"❌ 无法读取版本号: {e}")
+        print(f"❌ Unable to read version number: {e}")
         return None
 
 def clean_build():
-    """清理构建文件"""
+    """Clean build files"""
     import shutil
     
     dirs_to_clean = ["dist", "build"]
     for dir_name in dirs_to_clean:
         if Path(dir_name).exists():
             shutil.rmtree(dir_name)
-            print(f"🗑️  删除目录: {dir_name}")
+            print(f"🗑️  Removed directory: {dir_name}")
     
-    # 清理 egg-info 目录
+    # Clean egg-info directories
     for egg_info in Path(".").glob("*.egg-info"):
         shutil.rmtree(egg_info)
-        print(f"🗑️  删除目录: {egg_info}")
+        print(f"🗑️  Removed directory: {egg_info}")
 
 def build_frontend():
-    """构建前端并复制静态文件"""
-    print("🏗️  构建前端...")
+    """Build frontend and copy static files"""
+    print("🏗️  Building frontend...")
     
-    # 运行前端构建脚本
+    # Run frontend build script
     build_script = Path("scripts/build_frontend.py")
     if build_script.exists():
-        return run_command(f"{get_python_executable()} scripts/build_frontend.py", "构建前端")
+        return run_command(f"{get_python_executable()} scripts/build_frontend.py", "Build frontend")
     else:
-        print("⚠️  前端构建脚本不存在，跳过前端构建")
+        print("⚠️  Frontend build script not found, skipping frontend build")
         return True
 
 def build_package():
-    """构建发布包"""
-    return run_command("python -m build", "构建发布包")
+    """Build distribution package"""
+    return run_command("python -m build", "Build distribution package")
 
 def check_package():
-    """检查包内容"""
-    return run_command("twine check dist/*", "验证包内容")
+    """Check package contents"""
+    return run_command("twine check dist/*", "Validate package contents")
 
 def list_dist_files():
-    """列出构建的文件"""
-    print("\n📦 构建的文件:")
+    """List built files"""
+    print("\n📦 Built files:")
     dist_path = Path("dist")
     if dist_path.exists():
         for file in dist_path.iterdir():
@@ -181,10 +181,10 @@ def list_dist_files():
             print(f"   📄 {file.name} ({size:.1f} KB)")
 
 def upload_to_testpypi():
-    """上传到 TestPyPI"""
-    print("\n🧪 上传到 TestPyPI...")
+    """Upload to TestPyPI"""
+    print("\n🧪 Uploading to TestPyPI...")
     
-    # 设置环境变量避免编码问题
+    # Set environment variables to avoid encoding issues
     env = os.environ.copy()
     env['PYTHONIOENCODING'] = 'utf-8'
     env['PYTHONUTF8'] = '1'
@@ -200,14 +200,14 @@ def upload_to_testpypi():
         )
         return result.returncode == 0
     except Exception as e:
-        print(f"❌ 上传失败: {e}")
+        print(f"❌ Upload failed: {e}")
         return False
 
 def upload_to_pypi():
-    """上传到 PyPI"""
-    print("\n🚀 上传到 PyPI...")
+    """Upload to PyPI"""
+    print("\n🚀 Uploading to PyPI...")
     
-    # 设置环境变量避免编码问题
+    # Set environment variables to avoid encoding issues
     env = os.environ.copy()
     env['PYTHONIOENCODING'] = 'utf-8'
     env['PYTHONUTF8'] = '1'
@@ -223,61 +223,61 @@ def upload_to_pypi():
         )
         return result.returncode == 0
     except Exception as e:
-        print(f"❌ 上传失败: {e}")
+        print(f"❌ Upload failed: {e}")
         return False
 
 def main():
-    parser = argparse.ArgumentParser(description="发布 GraphXR Database Proxy 到 PyPI")
+    parser = argparse.ArgumentParser(description="Publish GraphXR Database Proxy to PyPI")
     parser.add_argument("target", nargs="?", choices=["test", "prod", "build"], 
-                       help="发布目标: test (TestPyPI)、prod (PyPI) 或 build (仅构建验证)")
+                       help="Publish target: test (TestPyPI), prod (PyPI), or build (build and validate only)")
     args = parser.parse_args()
     
-    print("🚀 GraphXR Database Proxy 发布工具")
+    print("🚀 GraphXR Database Proxy Publishing Tool")
     print("=" * 50)
     
-    # 检查并安装依赖
+    # Check and install dependencies
     if not check_and_install_dependencies():
         sys.exit(1)
     
-    # 检查要求
+    # Check requirements
     if not check_requirements():
         sys.exit(1)
     
-    # 显示当前版本
+    # Display current version
     version = get_version()
     if version:
-        print(f"📋 当前版本: {version}")
+        print(f"📋 Current version: {version}")
     else:
-        print("❌ 无法获取版本号")
+        print("❌ Unable to get version number")
         sys.exit(1)
     
-    # 清理构建文件
-    print("\n🧹 清理构建文件...")
+    # Clean build files
+    print("\n🧹 Cleaning build files...")
     clean_build()
     
-    # 构建前端
+    # Build frontend
     if not build_frontend():
         sys.exit(1)
     
-    # 构建包
+    # Build package
     if not build_package():
         sys.exit(1)
     
-    # 检查包
+    # Check package
     if not check_package():
         sys.exit(1)
     
-    # 列出构建的文件
+    # List built files
     list_dist_files()
     
-    # 确定发布目标
+    # Determine publish target
     target = args.target
     if not target:
-        print("\n📋 选择操作:")
-        print("   1. build - 仅构建和验证包")
-        print("   2. test  - TestPyPI (测试)")
-        print("   3. prod  - PyPI (正式)")
-        choice = input("请选择 (1/2/3): ").strip()
+        print("\n📋 Select operation:")
+        print("   1. build - Build and validate package only")
+        print("   2. test  - TestPyPI (testing)")
+        print("   3. prod  - PyPI (production)")
+        choice = input("Please select (1/2/3): ").strip()
         if choice == "1":
             target = "build"
         elif choice == "2":
@@ -288,46 +288,46 @@ def main():
             target = None
     
     if target == "build":
-        print(f"\n✅ 包构建和验证完成!")
-        print(f"📦 构建文件位于 dist/ 目录")
-        print(f"🔍 你可以检查以下文件:")
+        print(f"\n✅ Package build and validation complete!")
+        print(f"📦 Build files are in the dist/ directory")
+        print(f"🔍 You can check the following files:")
         for file in Path("dist").iterdir():
             print(f"   📄 {file.name}")
-        print(f"\n💡 下一步:")
-        print(f"   - 运行 'python scripts/publish.py test' 发布到 TestPyPI")
-        print(f"   - 运行 'python scripts/publish.py prod' 发布到 PyPI")
+        print(f"\n💡 Next steps:")
+        print(f"   - Run 'python scripts/publish.py test' to publish to TestPyPI")
+        print(f"   - Run 'python scripts/publish.py prod' to publish to PyPI")
         
     elif target == "test":
-        print(f"\n🧪 准备发布到 TestPyPI...")
+        print(f"\n🧪 Preparing to publish to TestPyPI...")
         if upload_to_testpypi():
-            print(f"\n🎉 成功发布到 TestPyPI!")
-            print(f"📦 测试安装:")
+            print(f"\n🎉 Successfully published to TestPyPI!")
+            print(f"📦 Test installation:")
             print(f"   pip install --index-url https://test.pypi.org/simple/ graphxr-database-proxy=={version}")
-            print(f"🔗 查看: https://test.pypi.org/project/graphxr-database-proxy/{version}/")
+            print(f"🔗 View: https://test.pypi.org/project/graphxr-database-proxy/{version}/")
         else:
             sys.exit(1)
             
     elif target == "prod":
-        print(f"\n⚠️  准备发布到正式 PyPI (版本 {version})")
-        print("   这将使包对所有用户可用!")
-        confirm = input("   确认发布? (yes/no): ").lower()
+        print(f"\n⚠️  Preparing to publish to production PyPI (version {version})")
+        print("   This will make the package available to all users!")
+        confirm = input("   Confirm publish? (yes/no): ").lower()
         
         if confirm == "yes":
             if upload_to_pypi():
-                print(f"\n🎉 成功发布到 PyPI!")
-                print(f"📦 安装:")
+                print(f"\n🎉 Successfully published to PyPI!")
+                print(f"📦 Installation:")
                 print(f"   pip install graphxr-database-proxy=={version}")
-                print(f"🔗 查看: https://pypi.org/project/graphxr-database-proxy/{version}/")
+                print(f"🔗 View: https://pypi.org/project/graphxr-database-proxy/{version}/")
             else:
                 sys.exit(1)
         else:
-            print("❌ 发布已取消")
+            print("❌ Publish cancelled")
             
     else:
-        print("❌ 无效的选择")
+        print("❌ Invalid selection")
         sys.exit(1)
     
-    print(f"\n✨ 操作完成!")
+    print(f"\n✨ Operation completed!")
 
 if __name__ == "__main__":
     main()

@@ -72,3 +72,8 @@ In the nodemon console, type `rs` to manually restart the backend service.
 ├── nodemon.json           # nodemon configuration
 └── package.json           # npm scripts and dependencies
 ```
+
+## Release 
+ 
+ - [Docker Publishing Guide](DOCKER_PUBLISHING.md)
+ - [PyPI Publishing Guide](PYPI_PUBLISHING.md)

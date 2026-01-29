@@ -1,8 +1,8 @@
 # 开发环境指南
 
-> **Language**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.zh.md)
+> **语言**: [English](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.md) | [中文](https://github.com/Kineviz/graphxr-database-proxy/blob/main/doc/DEV_GUIDE.zh.md)
 
-## Prerequisites
+## 前提条件
 
 - **Node.js** >= 22.x — [点击这里下载](https://nodejs.org/en/download/)
 - **Python** >= 3.9.x — [点击这里下载](https://www.python.org/downloads/)
@@ -73,3 +73,10 @@ npm run dev:frontend   # 只启动前端
 ├── nodemon.json           # nodemon 配置
 └── package.json           # npm 脚本和依赖
 ```
+
+
+
+## 软件发布 
+ 
+ - [Docker 发布指南](DOCKER_PUBLISHING.zh.md)
+ - [PyPI 发布指南](PYPI_PUBLISHING.zh.md)
