@@ -1,5 +1,7 @@
 # PyPI Publishing Guide
 
+> Notice: When push a new version tag (e.g., v1.0.0) to the repository, GitHub Actions will automatically trigger the publishing workflow to build and publish the package to PyPI.
+
 Complete steps for publishing GraphXR Database Proxy to PyPI (pip).
 
 > **Language**: [English](PYPI_PUBLISHING.md) | [中文](PYPI_PUBLISHING.zh.md)
@@ -45,6 +47,8 @@ pyproject.toml   # Project configuration
 
 > create new version with the following command:
 > ***python scripts/update_version.py <new_version>***
+
+> Notice: When push a new version tag (e.g., v1.0.0) to the repository, GitHub Actions will automatically trigger the publishing workflow to build and publish the package to PyPI.
 
 Use our automation script to build and publish with one command:
 

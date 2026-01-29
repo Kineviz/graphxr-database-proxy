@@ -3,9 +3,9 @@ name: Publish to PyPI
 on:
   push:
     tags:
-      - 'v*'  # 当推送版本标签时触发 (例如: v1.0.0)
+      - 'v*'  # When pushing a version tag (e.g., v1.0.0)
   
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:  #allow manual trigger
     inputs:
       target:
         description: 'Publish target'
@@ -51,7 +51,25 @@ jobs:
         echo "📦 Built files:"
         ls -la dist/
     
-    # 发布到 TestPyPI (手动触发或开发分支)
+    # Validate secrets are configured
+    - name: Validate secrets
+      run: |
+        echo "🔐 Validating secrets configuration..."
+        if [ "${{ github.event.inputs.target }}" == "testpypi" ] || [ "${{ contains(github.ref, 'alpha') }}" == "true" ]; then
+          if [ -z "${{ secrets.TEST_PYPI_API_TOKEN }}" ]; then
+            echo "❌ ERROR: TEST_PYPI_API_TOKEN secret is not configured"
+            exit 1
+          fi
+          echo "✅ TEST_PYPI_API_TOKEN is configured"
+        else
+          if [ -z "${{ secrets.PYPI_API_TOKEN }}" ]; then
+            echo "❌ ERROR: PYPI_API_TOKEN secret is not configured"
+            exit 1
+          fi
+          echo "✅ PYPI_API_TOKEN is configured"
+        fi
+    
+    # Publish to TestPyPI (manual trigger or dev branch)
     - name: Publish to TestPyPI
       if: ${{ github.event.inputs.target == 'testpypi' || (github.event_name == 'push' && contains(github.ref, 'alpha')) }}
       env:
@@ -59,10 +77,16 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
       run: |
         echo "🧪 Publishing to TestPyPI..."
-        twine upload --repository testpypi dist/*
+        if [ -z "$TWINE_PASSWORD" ]; then
+          echo "❌ ERROR: TEST_PYPI_API_TOKEN is empty or not set"
+          echo "Please configure TEST_PYPI_API_TOKEN in repository secrets"
+          exit 1
+        fi
+        echo "Token length: ${#TWINE_PASSWORD} characters"
+        twine upload --repository testpypi dist/* --verbose
         echo "✅ Published to TestPyPI successfully"
     
-    # 发布到正式 PyPI (标签发布)
+    # Publish to production PyPI (tag release)
     - name: Publish to PyPI
       if: ${{ github.event.inputs.target == 'pypi' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, 'alpha')) }}
       env:
@@ -70,7 +94,13 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
         echo "🚀 Publishing to PyPI..."
-        twine upload dist/*
+        if [ -z "$TWINE_PASSWORD" ]; then
+          echo "❌ ERROR: PYPI_API_TOKEN is empty or not set"
+          echo "Please configure PYPI_API_TOKEN in repository secrets"
+          exit 1
+        fi
+        echo "Token length: ${#TWINE_PASSWORD} characters"
+        twine upload dist/* --verbose
         echo "✅ Published to PyPI successfully"
     
     - name: Create Release
