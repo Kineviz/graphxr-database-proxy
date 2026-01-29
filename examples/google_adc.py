@@ -4,19 +4,47 @@ Google Application Default Credentials (ADC) Example
 This example demonstrates how to configure and start the GraphXR Database Proxy
 using Google Application Default Credentials (ADC) for authentication.
 
-Quick Start:
-    ```bash
-    git clone git@github.com:Kineviz/graphxr-database-proxy.git
-    cd graphxr-database-proxy
-    uv venv
-    source .venv/bin/activate
-    uv pip install graphxr-database-proxy google-auth google-cloud-resource-manager
-    export PROJECT_ID="your-gcp-project-id"
-    export INSTANCE_ID="your-spanner-instance-id"
-    export DATABASE_ID="your-spanner-database-id" # e.g. "retail"
-    export PROPERTY_GRAPH_NAME="your-property-graph-name" # e.g. "ECommerceGraph"
-    python examples/google_adc.py
-    ```
+# Quick Start
+
+1. Set the ADC by logging into GCP with gcloud
+
+```
+gcloud auth application-default login
+```
+
+2. Clone the repository and install the dependencies
+
+```bash
+git clone git@github.com:Kineviz/graphxr-database-proxy.git
+cd graphxr-database-proxy
+uv venv
+source .venv/bin/activate
+uv pip install graphxr-database-proxy google-auth google-cloud-resource-manager
+export PROJECT_ID="your-gcp-project-id"
+export INSTANCE_ID="your-spanner-instance-id"
+export DATABASE_ID="your-spanner-database-id" # e.g. "retail"
+export PROPERTY_GRAPH_NAME="your-property-graph-name" # e.g. "ECommerceGraph"
+python examples/google_adc.py
+```
+
+3. Connect to the GraphXR Database Proxy from GraphXR
+
+Copy the "API URL(GraphXR)" from the output of google_adc.py and paste it into the proxy url  below:
+Create GraphXR project
+- Database Type = `Database Proxy`
+- GraphXR Database Proxy URL = `http://localhost:3003/api/spanner/kineviz-public`
+
+4. Run a query
+
+In the Query panel run the query:
+
+```
+GRAPH ECommerceGraph
+MATCH (n)-[r]-(m)
+RETURN n, r, m;
+```
+
+# More information
 
 Configure ADC using one of these methods:
     - Local development: 
