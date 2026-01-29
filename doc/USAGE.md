@@ -72,7 +72,61 @@ The system provides sample data in formats compatible with GraphXR:
 
 ## 🔐 Security Configuration
 
-### Authentication Setup
+### API Key Authentication (Optional)
+
+The proxy supports optional API key authentication to protect all API endpoints. When enabled, clients must include a valid API key in their requests.
+
+#### Enabling API Key Authentication
+
+Set the `API_KEY` environment variable to enable authentication:
+
+```bash
+# Set API key via environment variable
+export API_KEY=your-secure-api-key-here
+
+# Start the server
+python -m uvicorn src.graphxr_database_proxy.main:app --port 9080
+```
+
+Or in a `.env` file:
+```
+API_KEY=your-secure-api-key-here
+```
+
+#### Making Authenticated Requests
+
+When API key authentication is enabled, include the `X-API-Key` header in all API requests:
+
+```bash
+# Example: List projects
+curl -H "X-API-Key: your-secure-api-key-here" \
+  http://localhost:9080/api/project/list
+
+# Example: Execute a query
+curl -X POST \
+  -H "X-API-Key: your-secure-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "SELECT * FROM table"}' \
+  http://localhost:9080/api/spanner/my-project/query
+```
+
+#### Protected vs Public Endpoints
+
+| Endpoint | Protected | Description |
+|----------|-----------|-------------|
+| `/api/project/*` | Yes | Project management |
+| `/api/{db_type}/{project}/*` | Yes | Database operations |
+| `/api/google/*` | Yes | Google Cloud operations |
+| `/google/spanner/login` | No | OAuth login flow |
+| `/google/spanner/callback` | No | OAuth callback |
+| `/health` | No | Health check |
+| `/docs`, `/redoc` | No | API documentation |
+
+#### Disabling Authentication
+
+To disable API key authentication, simply leave the `API_KEY` environment variable unset or empty. All endpoints will be accessible without authentication.
+
+### Database Authentication Setup
 
 #### Using Google Credentials File
 1. **Create OAuth2 Client in Google Cloud Console**:

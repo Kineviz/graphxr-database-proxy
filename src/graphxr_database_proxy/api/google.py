@@ -18,7 +18,7 @@ os.environ.setdefault('GOOGLE_CLOUD_DISABLE_GRPC_FOR_GAE', 'true')
 os.environ.setdefault('GRPC_VERBOSITY', 'ERROR')
 
 from typing import Any, Dict, List
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from google.cloud import spanner
 from google.cloud import resourcemanager_v3
@@ -29,6 +29,7 @@ import requests
 from ..models.google import   GoogleProject, SpannerDatabase
 from google.api_core.exceptions import GoogleAPIError
 from ..common.util import get_default_oauth_config
+from .auth import verify_api_key
 
 router = APIRouter(tags=["google"])
 
@@ -86,7 +87,10 @@ def get_google_credentials(auth_info, auth_type='service_account'):
 
 
 @router.post("/api/google/spanner/list_projects", response_model=List[GoogleProject])
-async def list_google_projects(request: Request):
+async def list_google_projects(
+    request: Request,
+    _: str | None = Depends(verify_api_key)
+):
     """List Google Cloud projects"""
     try:
         # Get authentication info from request body json
@@ -165,6 +169,7 @@ async def list_google_projects(request: Request):
 @router.post("/api/google/spanner/list_databases", response_model=list[SpannerDatabase])
 async def list_google_databases(
     request_data: Dict[str, Any],
+    _: str | None = Depends(verify_api_key)
 ):
     """List Google Cloud Spanner databases"""
     try:
@@ -414,7 +419,10 @@ async def google_spanner_login(request: Request):
 
 
 @router.post("/api/google/refresh-token")
-async def refresh_google_token(request: Request):
+async def refresh_google_token(
+    request: Request,
+    _: str | None = Depends(verify_api_key)
+):
     """Refresh Google OAuth2 access token"""
     try:
         body = await request.json()

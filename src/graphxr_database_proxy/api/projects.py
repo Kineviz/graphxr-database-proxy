@@ -6,6 +6,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Depends
 from ..models.project import Project, ProjectCreate, ProjectUpdate
 from ..services.project_service import ProjectService
+from .auth import verify_api_key
 
 router = APIRouter(prefix="/api/project", tags=["projects"])
 
@@ -17,7 +18,8 @@ def get_project_service() -> ProjectService:
 @router.post("/create", response_model=Project)
 async def create_project(
     project_data: ProjectCreate,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    _: str | None = Depends(verify_api_key)
 ):
     """Create a new project"""
     try:
@@ -37,7 +39,8 @@ async def create_project(
 
 @router.get("/list", response_model=List[Project])
 async def list_projects(
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    _: str | None = Depends(verify_api_key)
 ):
     """List all projects"""
     try:
@@ -50,7 +53,8 @@ async def list_projects(
 @router.get("/{project_id}", response_model=Project)
 async def get_project(
     project_id: str,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    _: str | None = Depends(verify_api_key)
 ):
     """Get a project by ID"""
     try:
@@ -68,7 +72,8 @@ async def get_project(
 async def update_project(
     project_id: str,
     update_data: ProjectUpdate,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    _: str | None = Depends(verify_api_key)
 ):
     """Update a project"""
     try:
@@ -85,7 +90,8 @@ async def update_project(
 @router.delete("/delete")
 async def delete_project(
     project_id: str,
-    service: ProjectService = Depends(get_project_service)
+    service: ProjectService = Depends(get_project_service),
+    _: str | None = Depends(verify_api_key)
 ):
     """Delete a project"""
     try:
