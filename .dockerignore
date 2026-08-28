@@ -121,10 +121,8 @@ projects.json
 *.sqlite3
 
 # Sensitive configuration
-config/credentials.json
-config/service-account.json
-config/*-credentials.json
-config/*-oauth*.json
+config/*
+
 # Test files
 test_*.py
 *_test.py

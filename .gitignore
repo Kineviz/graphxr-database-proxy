@@ -327,10 +327,7 @@ Thumbs.db
 *~
 
 # Config files with sensitive data
-config/credentials.json
-config/service-account.json
-config/*-credentials.json
-config/*-oauth*.json
+config/*
 
 # Local test scratch files (real tests live in tests/ — tracked)
 *_test.py
