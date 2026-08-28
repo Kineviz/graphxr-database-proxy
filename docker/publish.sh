@@ -73,6 +73,7 @@ docker_build(){
     else 
         docker buildx build \
             -f ./docker/Dockerfile \
+            --platform linux/amd64,linux/arm64 \
             -t "${DOCKERHOST}/${PROJECTNAME}:${version}" ./ 
         echo "Docker image ${DOCKERHOST}/${PROJECTNAME}:${version} built successfully!"
     fi
