@@ -4,10 +4,10 @@
 GraphXR Database Proxy Automated Publishing Script
 
 Usage:
-    python scripts/publish.py test    # Publish to TestPyPI
-    python scripts/publish.py prod    # Publish to PyPI
-    python scripts/publish.py build   # Build and validate only
-    python scripts/publish.py         # Interactive selection
+   python scripts/publish.py test    # Publish to TestPyPI
+   python scripts/publish.py prod    # Publish to PyPI
+   python scripts/publish.py build   # Build and validate only
+   python scripts/publish.py         # Interactive selection
 """
 
 import subprocess
@@ -36,6 +36,18 @@ if sys.platform == "win32":
 def get_python_executable():
     """Get the path of the current Python interpreter"""
     return sys.executable
+
+def twine_command():
+    """Build the twine invocation.
+
+    twine requires a newer "packaging" than uv.lock pins for this project, and
+    any "uv run" resyncs .venv back to the lock, so "python -m twine" inside
+    .venv dies with ImportError: cannot import name 'errors' from 'packaging'.
+    Run twine from its own isolated environment whenever uv is available.
+    """
+    if shutil.which("uv"):
+        return "uvx --from twine twine"
+    return f'"{get_python_executable()}" -m twine'
 
 def run_command(command, description):
     """Run command and check result"""
@@ -75,8 +87,10 @@ def check_and_install_dependencies():
     """Check and install publishing dependencies"""
     print("🔍 Checking publishing dependencies...")
     
-    # Check and install required Python packages
-    required_packages = ["build", "twine"]
+    # Check and install required Python packages. twine is not one of them
+    # when uv is available: twine_command() runs it out of an isolated
+    # environment instead of this one.
+    required_packages = ["build"] if shutil.which("uv") else ["build", "twine"]
     missing_packages = []
     
     for package in required_packages:
@@ -175,7 +189,7 @@ def build_package():
 
 def check_package():
     """Check package contents"""
-    return run_command(f'"{get_python_executable()}" -m twine check dist/*', "Validate package contents")
+    return run_command(f"{twine_command()} check dist/*", "Validate package contents")
 
 def list_dist_files():
     """List built files"""
@@ -197,7 +211,7 @@ def upload_to_testpypi():
     
     try:
         result = subprocess.run(
-            f"{get_python_executable()} -m twine upload --repository testpypi dist/*",
+            f"{twine_command()} upload --repository testpypi dist/*",
             shell=True,
             env=env,
             text=True,
@@ -220,7 +234,7 @@ def upload_to_pypi():
     
     try:
         result = subprocess.run(
-            f"{get_python_executable()} -m twine upload dist/*",
+            f"{twine_command()} upload dist/*",
             shell=True,
             env=env,
             text=True,
