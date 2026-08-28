@@ -1,0 +1,119 @@
+/* App layout styles */
+.app-layout {
+  min-height: 100vh;
+}
+
+.app-content {
+  padding: 0;
+  background-color: #f5f5f5;
+}
+
+.content-wrapper {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header styles */
+.app-header {
+  background: #001529;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 0;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 64px;
+}
+
+.logo-icon {
+  font-size: 24px;
+  color: #1890ff;
+}
+
+.app-title {
+  margin: 0 !important;
+  color: #fff;
+  font-weight: 600;
+}
+
+.header-button {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.header-button:hover {
+  color: #fff;
+}
+
+/* Project management styles */
+.project-management {
+  width: 100%;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.page-header h2 {
+  margin: 0;
+}
+
+/* Project form styles */
+.ant-form-item-label > label.ant-form-item-required:not(.ant-form-item-required-mark-optional) {
+  font-weight: 500;
+}
+
+.ant-card .ant-card {
+  border: 1px solid #d9d9d9;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid #d9d9d9;
+}
+
+/* API URLs modal styles */
+.ant-input-group {
+  display: flex;
+}
+
+.ant-input-group .ant-input {
+  border-radius: 6px 0 0 6px;
+}
+
+.ant-input-group .ant-btn {
+  border-radius: 0 6px 6px 0;
+  border-left: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: 16px;
+  }
+  
+  .header-content {
+    padding: 0 16px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  .ant-table-tbody > tr > td {
+    padding: 8px;
+  }
+}

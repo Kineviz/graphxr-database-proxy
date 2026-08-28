@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kineviz.com/schemas/graphxr/graphdb-contract-1.json",
+  "title": "GraphXR graph-database contract",
+  "description": "The normative wire contract shared by the GraphXR client, the GraphXR server (modules/graphdb) and graphxr-database-proxy. The TypeScript definitions in shared/graphdb are the source; this file is what the Python side validates against. See ai/graph-db-adapter-refactoring-spec.md §8.2.",
+  "contractVersion": "1.0.0",
+  "$defs": {
+    "GxrNode": {
+      "type": "object",
+      "required": ["id", "labels", "properties"],
+      "properties": {
+        "id": { "type": "string" },
+        "labels": { "type": "array", "items": { "type": "string" } },
+        "properties": { "type": "object" }
+      }
+    },
+    "GxrRelationship": {
+      "type": "object",
+      "required": ["id", "type", "startNodeId", "endNodeId", "properties"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "startNodeId": { "type": "string" },
+        "endNodeId": { "type": "string" },
+        "properties": { "type": "object" }
+      }
+    },
+    "GxrGraphData": {
+      "type": "object",
+      "required": ["nodes", "relationships"],
+      "properties": {
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/GxrNode" } },
+        "relationships": { "type": "array", "items": { "$ref": "#/$defs/GxrRelationship" } }
+      }
+    },
+    "GxrQueryResult": {
+      "description": "A TABLE result's first row is the column header — a convention the whole UI relies on.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type", "data"],
+          "properties": {
+            "type": { "const": "GRAPH" },
+            "data": { "$ref": "#/$defs/GxrGraphData" },
+            "summary": { "type": "object" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["type", "data"],
+          "properties": {
+            "type": { "const": "TABLE" },
+            "data": { "type": "array", "items": { "type": "array" } },
+            "summary": { "type": "object" }
+          }
+        }
+      ]
+    },
+    "CategoryMeta": {
+      "type": "object",
+      "required": ["name", "props", "propsTypes", "keys", "keysTypes"],
+      "properties": {
+        "name": { "type": "string" },
+        "props": { "type": "array", "items": { "type": "string" } },
+        "propsTypes": { "type": "object", "additionalProperties": { "type": "string" } },
+        "keys": { "type": "array", "items": { "type": "string" } },
+        "keysTypes": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    },
+    "RelationshipMeta": {
+      "allOf": [
+        { "$ref": "#/$defs/CategoryMeta" },
+        {
+          "type": "object",
+          "required": ["startCategory", "endCategory"],
+          "properties": {
+            "startCategory": { "type": "string" },
+            "endCategory": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "SchemaMapEntry": {
+      "type": "object",
+      "required": ["id", "name", "startLabelName", "endLabelName"],
+      "properties": {
+        "id": { "type": ["string", "number"] },
+        "name": { "type": "string" },
+        "startLabelName": { "type": "string" },
+        "endLabelName": { "type": "string" }
+      }
+    },
+    "GraphSchema": {
+      "type": "object",
+      "required": ["categories", "relationships", "maps"],
+      "properties": {
+        "graphName": { "type": "string" },
+        "categories": { "type": "object", "additionalProperties": { "$ref": "#/$defs/CategoryMeta" } },
+        "relationships": { "type": "object", "additionalProperties": { "$ref": "#/$defs/RelationshipMeta" } },
+        "maps": { "type": "array", "items": { "$ref": "#/$defs/SchemaMapEntry" } }
+      }
+    },
+    "ExpandDirection": { "enum": ["all", "from", "to", "both"] },
+    "NodeIdStrategy": { "enum": ["internal-id", "label-key"] },
+    "ExpandPredicate": { "enum": ["internal-id", "primary-key"] },
+    "IntentName": { "enum": ["expand", "pullCategory", "pullRelationship", "search"] },
+    "GraphDbCapabilities": {
+      "type": "object",
+      "required": [
+        "type",
+        "queryLanguages",
+        "defaultQueryLanguage",
+        "identity",
+        "expand",
+        "schema",
+        "fulltextSearch",
+        "pull",
+        "multiDatabase",
+        "write"
+      ],
+      "properties": {
+        "type": { "type": "string", "minLength": 1 },
+        "queryLanguages": { "type": "array", "items": { "type": "string" } },
+        "defaultQueryLanguage": { "type": "string" },
+        "identity": {
+          "type": "object",
+          "required": ["nodeId"],
+          "properties": { "nodeId": { "$ref": "#/$defs/NodeIdStrategy" } }
+        },
+        "expand": {
+          "type": "object",
+          "required": [
+            "predicate",
+            "directions",
+            "multiHop",
+            "relationshipTypeFilter",
+            "internalRelationships",
+            "excludeRelationshipIds"
+          ],
+          "properties": {
+            "predicate": { "$ref": "#/$defs/ExpandPredicate" },
+            "directions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/ExpandDirection" } },
+            "multiHop": { "type": "boolean" },
+            "relationshipTypeFilter": { "type": "boolean" },
+            "internalRelationships": { "type": "boolean" },
+            "excludeRelationshipIds": { "type": "boolean" }
+          }
+        },
+        "schema": {
+          "type": "object",
+          "required": ["source", "refreshOnWrite"],
+          "properties": {
+            "source": { "enum": ["server-route", "client-probe", "proxy", "none"] },
+            "refreshOnWrite": { "type": "boolean" }
+          }
+        },
+        "fulltextSearch": {
+          "type": "object",
+          "required": ["supported", "manageIndex"],
+          "properties": {
+            "supported": { "type": "boolean" },
+            "manageIndex": { "type": "boolean" }
+          }
+        },
+        "pull": {
+          "type": "object",
+          "required": ["category", "relationship", "excludeLoaded"],
+          "properties": {
+            "category": { "type": "boolean" },
+            "relationship": { "type": "boolean" },
+            "excludeLoaded": { "type": "boolean" }
+          }
+        },
+        "multiDatabase": { "type": "boolean" },
+        "write": { "type": "boolean" },
+        "intents": { "type": "array", "items": { "$ref": "#/$defs/IntentName" } },
+        "contractVersion": { "type": "string" }
+      }
+    },
+    "ExpandRequest": {
+      "type": "object",
+      "required": ["nodeIds", "direction", "limit", "skip"],
+      "properties": {
+        "nodeIds": { "type": "array", "items": { "type": "string" } },
+        "category": { "type": "string" },
+        "relationships": { "type": "array", "items": { "type": "string" } },
+        "direction": { "$ref": "#/$defs/ExpandDirection" },
+        "hops": { "type": "integer", "minimum": 1 },
+        "onlyBetweenSelected": { "type": "boolean" },
+        "excludeRelationshipIds": { "type": "array", "items": { "type": "string" } },
+        "excludeRelationshipTypes": { "type": "array", "items": { "type": "string" } },
+        "limit": { "type": "integer", "minimum": 0 },
+        "skip": { "type": "integer", "minimum": 0 },
+        "ignoreTips": { "type": "boolean" }
+      }
+    },
+    "PullCategoryRequest": {
+      "type": "object",
+      "required": ["category", "limit", "skip"],
+      "properties": {
+        "category": { "type": "string" },
+        "loadedNodeIds": { "type": "array", "items": { "type": "string" } },
+        "limit": { "type": "integer", "minimum": 0 },
+        "skip": { "type": "integer", "minimum": 0 },
+        "ignoreTips": { "type": "boolean" }
+      }
+    },
+    "PullRelationshipRequest": {
+      "type": "object",
+      "required": ["relationship", "limit", "skip"],
+      "properties": {
+        "relationship": { "type": "string" },
+        "loadedRelationshipIds": { "type": "array", "items": { "type": "string" } },
+        "limit": { "type": "integer", "minimum": 0 },
+        "skip": { "type": "integer", "minimum": 0 },
+        "ignoreTips": { "type": "boolean" }
+      }
+    },
+    "FulltextSearchRequest": {
+      "type": "object",
+      "required": ["keyword", "limit", "skip"],
+      "properties": {
+        "keyword": { "type": "string" },
+        "indexName": { "type": "string" },
+        "categories": { "type": "array", "items": { "type": "string" } },
+        "countOnly": { "type": "boolean" },
+        "useApoc": { "type": "boolean" },
+        "limit": { "type": "integer", "minimum": 0 },
+        "skip": { "type": "integer", "minimum": 0 },
+        "ignoreTips": { "type": "boolean" }
+      }
+    }
+  }
+}

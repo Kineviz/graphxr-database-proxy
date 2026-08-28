@@ -1,0 +1,12 @@
+Use Google ADC Cloud-platform scopes modify
+
+gcloud compute ssh --zone "us-central1-a" "test" --project "spanner-demo-478200"
+
+# Stop VM
+gcloud compute instances stop instance-20260128-115654 --zone "us-central1-a" --project "spanner-demo-478200"
+
+# modify the scopes contains cloud-platform（All GCP API）
+gcloud compute instances set-service-account instance-20260128-115654 --zone "us-central1-a" --project "spanner-demo-478200" --scopes=cloud-platform
+
+# Start VM
+gcloud compute instances start instance-20260128-115654 --zone "us-central1-a" --project "spanner-demo-478200"

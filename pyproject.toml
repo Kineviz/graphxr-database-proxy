@@ -1,0 +1,96 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graphxr-database-proxy"
+version = "1.1.2"
+description = "GraphXR Database Proxy - Secure middleware for connecting GraphXR to databases"
+authors = [{name="Sean Li", email="sean@kineviz.com"}, {name = "Kineviz", email = "support@kineviz.com"}]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.0.0",
+    "python-multipart>=0.0.6",
+    "python-dotenv>=1.0.0",
+    "google-cloud-spanner>=3.40.0",
+    "google-cloud-bigquery>=3.25.0",
+    "google-cloud-resource-manager>=1.10.0",
+    "google-auth-oauthlib>=1.0.0",
+    "google-auth>=2.0.0",
+    "aiofiles>=23.0.0",
+    "pyyaml>=6.0",
+    "httpx>=0.25.0",
+    "neo4j>=5.28.0,<6",
+    # Wheel-tag matching, so the proxy can tell whether an engine release will
+    # install here before it tries. See drivers/embedded/pypi.py.
+    "packaging>=23.0",
+]
+
+[project.optional-dependencies]
+ui = [
+    "aiofiles>=23.0.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.0.0",
+]
+all = [
+    "graphxr-database-proxy[ui,dev]",
+]
+
+[project.scripts]
+graphxr-proxy = "graphxr_database_proxy.launcher:main"
+
+[project.urls]
+Homepage = "https://github.com/Kineviz/graphxr-database-proxy"
+Documentation = "https://docs.kineviz.com/graphxr-database-proxy"
+Repository = "https://github.com/Kineviz/graphxr-database-proxy"
+"Bug Tracker" = "https://github.com/Kineviz/graphxr-database-proxy/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"graphxr_database_proxy" = ["static/*", "static/**/*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+asyncio_mode = "auto"

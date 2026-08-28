@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  graphxr-database-proxy:
+    build: .
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./projects.json:/app/projects.json
+      - ./config:/app/config
+    environment:
+      - PYTHONPATH=/app
+      - DEVELOPMENT=true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
